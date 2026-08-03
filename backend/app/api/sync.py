@@ -18,6 +18,6 @@ def status(session: Session = Depends(get_session)):
 
 
 @router.post("/run")
-def trigger_sync():
-    run = run_sync()
+def trigger_sync(full: bool = False):
+    run = run_sync(full=full)
     return run

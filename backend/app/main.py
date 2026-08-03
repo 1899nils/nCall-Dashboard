@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from sqlmodel import select
 
-from app.api import calls, sites, stats, sync
+from app.api import admin, calls, sites, stats, sync
 from app.comtrexx.mock import site_mapping_seed
 from app.config import get_settings
 from app.database import init_db, session_scope
@@ -22,6 +22,7 @@ app.include_router(calls.router)
 app.include_router(stats.router)
 app.include_router(sites.router)
 app.include_router(sync.router)
+app.include_router(admin.router)
 
 
 @app.get("/api/health")

@@ -33,6 +33,12 @@ def generate_mock_records(since: datetime, until: datetime) -> list[dict]:
     """Generate plausible /calldata records between `since` and `until`,
     shaped exactly like the real COMtrexx API response (see client.py) so
     the same map_record() handles both mock and real data."""
+    # Cap the range so a full backfill (since=year 2000) or a misconfigured
+    # SYNC_LOOKBACK_DAYS doesn't generate years of hourly records.
+    earliest = until - timedelta(days=60)
+    if since < earliest:
+        since = earliest
+
     records = []
     current = since
     while current < until:

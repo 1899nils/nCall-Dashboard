@@ -122,9 +122,10 @@ Dashboard ist unabhängig davon voll benutzbar.
 ## Standort-Zuordnung (8 Standorte)
 
 COMtrexx kennt selbst keinen "Standort" pro Anruf — die Zuordnung erfolgt
-über ein Präfix-Mapping auf die interne Nebenstellennummer, verwaltbar über
-`GET/POST/DELETE /api/sites`. Beispiel-Seed über die Env-Var
-`SITE_MAPPING_SEED`:
+über ein Präfix-Mapping auf die interne Nebenstellennummer. Verwaltbar direkt
+im Dashboard unter dem Tab **„Einstellungen"** (Präfix hinzufügen/entfernen),
+alternativ über `GET/POST/DELETE /api/sites` oder als Erstbefüllung über die
+Env-Var `SITE_MAPPING_SEED`:
 
 ```json
 [
@@ -134,7 +135,30 @@ COMtrexx kennt selbst keinen "Standort" pro Anruf — die Zuordnung erfolgt
 ]
 ```
 
-Der längste passende Präfix gewinnt bei Überschneidungen.
+Der längste passende Präfix gewinnt bei Überschneidungen. Die Zuordnung wird
+nur beim **Import** eines Anrufs berechnet — bereits importierte Anrufe
+behalten ihren alten Standort, auch wenn ihr die Präfixe später ändert. Nach
+Anpassungen daher am besten unter „Einstellungen" auf **„Vollständigen Import
+starten"** klicken, damit alle Anrufe neu zugeordnet werden.
+
+## Datenverwaltung (Tab „Einstellungen")
+
+- **Alle Anrufdaten löschen**: löscht alle importierten Anrufe, die
+  Sync-Historie und den internen Fortschritts-Zeitstempel — nützlich z. B. um
+  Demo-Daten aus dem Mock-Modus zu entfernen, bevor man live geht.
+  Standort-Zuordnungen bleiben erhalten.
+- **Vollständigen Import starten**: ignoriert den normalen inkrementellen
+  Fortschritts-Zeitstempel und holt (im Rahmen dessen, was COMtrexx noch
+  vorhält) die komplette Anrufhistorie erneut. Sinnvoll nach dem Löschen,
+  nach dem Wechsel von Demo- auf Live-Betrieb, oder nach einer Änderung der
+  Standort-Zuordnung.
+
+Hinweis: Der reguläre tägliche Sync (`SYNC_CRON`) läuft inkrementell ab dem
+zuletzt gespeicherten Zeitstempel — direkt nach dem Wechsel von
+`COMTREXX_MOCK=true` auf `false` kann dieser Zeitstempel noch aus der
+Demo-Phase stammen, wodurch nur sehr wenige/aktuelle Anrufe importiert
+werden. Einmal „Alle Anrufdaten löschen" + „Vollständigen Import starten"
+behebt das.
 
 ## Konfiguration (Umgebungsvariablen)
 

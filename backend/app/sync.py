@@ -13,6 +13,9 @@ from app.models import Call, SiteMapping, Setting, SyncRun
 logger = logging.getLogger("ncall.sync")
 
 WATERMARK_KEY = "last_sync_until"
+# Used for a full backfill (ignores the stored watermark): far enough back
+# that it predates any COMtrexx call history still retained by the PBX.
+EPOCH = datetime(2000, 1, 1)
 
 
 def _get_watermark(session: Session, settings: Settings) -> datetime:
@@ -41,7 +44,10 @@ def _resolve_site(session: Session, internal_number: str) -> str | None:
     return best.site if best else None
 
 
-def run_sync() -> SyncRun:
+def run_sync(full: bool = False) -> SyncRun:
+    """Run a sync. With full=True, ignore the stored watermark and fetch
+    everything COMtrexx still has on record (for an initial/retroactive
+    backfill), then advance the watermark to now as usual."""
     settings = get_settings()
     with session_scope() as session:
         run = SyncRun(status="running")
@@ -49,7 +55,7 @@ def run_sync() -> SyncRun:
         session.commit()
         session.refresh(run)
 
-        since = _get_watermark(session, settings)
+        since = EPOCH if full else _get_watermark(session, settings)
         until = datetime.utcnow()
         records_synced = 0
 

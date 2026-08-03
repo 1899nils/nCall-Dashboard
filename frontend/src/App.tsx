@@ -4,6 +4,7 @@ import CallsPerDayChart from "./components/CallsPerDayChart";
 import CallsPerSiteChart from "./components/CallsPerSiteChart";
 import CallsTable from "./components/CallsTable";
 import FilterBar from "./components/FilterBar";
+import SettingsPanel from "./components/SettingsPanel";
 import StatTiles from "./components/StatTiles";
 import SyncStatus from "./components/SyncStatus";
 import { emptyFilters } from "./types";
@@ -12,6 +13,7 @@ import type { CallsResponse, Filters, SiteMapping, StatsSummary, SyncRun } from 
 const PAGE_SIZE = 25;
 
 export default function App() {
+  const [tab, setTab] = useState<"dashboard" | "settings">("dashboard");
   const [filters, setFilters] = useState<Filters>(emptyFilters);
   const [page, setPage] = useState(1);
 
@@ -21,8 +23,12 @@ export default function App() {
   const [lastRun, setLastRun] = useState<SyncRun | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  function reloadSites() {
     fetchSites().then(setSites).catch(() => {});
+  }
+
+  useEffect(() => {
+    reloadSites();
     fetchSyncStatus()
       .then((s) => setLastRun(s.last_run))
       .catch(() => {});
@@ -60,27 +66,42 @@ export default function App() {
       <h1>nCall Dashboard</h1>
       <p className="subtitle">Anrufstatistik aller Standorte · Auerswald COMtrexx</p>
 
-      <SyncStatus lastRun={lastRun} onSynced={refreshAfterSync} />
+      <div className="tabs">
+        <button className={tab === "dashboard" ? "active" : ""} onClick={() => setTab("dashboard")}>
+          Dashboard
+        </button>
+        <button className={tab === "settings" ? "active" : ""} onClick={() => setTab("settings")}>
+          Einstellungen
+        </button>
+      </div>
 
-      <FilterBar filters={filters} onChange={setFilters} sites={sites} />
-
-      {error && (
-        <div className="card" style={{ marginBottom: 16, color: "var(--status-critical)" }}>
-          {error}
-        </div>
-      )}
-
-      {summary && (
+      {tab === "settings" ? (
+        <SettingsPanel sites={sites} onSitesChanged={reloadSites} onDataChanged={refreshAfterSync} />
+      ) : (
         <>
-          <StatTiles summary={summary} />
-          <div className="charts-row">
-            <CallsPerDayChart data={summary.calls_per_day} />
-            <CallsPerSiteChart data={summary.calls_per_site} allSiteNames={allSiteNames} />
-          </div>
+          <SyncStatus lastRun={lastRun} onSynced={refreshAfterSync} />
+
+          <FilterBar filters={filters} onChange={setFilters} sites={sites} />
+
+          {error && (
+            <div className="card" style={{ marginBottom: 16, color: "var(--status-critical)" }}>
+              {error}
+            </div>
+          )}
+
+          {summary && (
+            <>
+              <StatTiles summary={summary} />
+              <div className="charts-row">
+                <CallsPerDayChart data={summary.calls_per_day} />
+                <CallsPerSiteChart data={summary.calls_per_site} allSiteNames={allSiteNames} />
+              </div>
+            </>
+          )}
+
+          <CallsTable data={calls} page={page} pageSize={PAGE_SIZE} onPageChange={setPage} />
         </>
       )}
-
-      <CallsTable data={calls} page={page} pageSize={PAGE_SIZE} onPageChange={setPage} />
     </>
   );
 }

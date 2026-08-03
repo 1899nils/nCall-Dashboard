@@ -37,8 +37,28 @@ export async function fetchSyncStatus(): Promise<{ last_run: SyncRun | null; rec
   return res.json();
 }
 
-export async function triggerSync(): Promise<SyncRun> {
-  const res = await fetch(`/api/sync/run`, { method: "POST" });
+export async function triggerSync(full = false): Promise<SyncRun> {
+  const res = await fetch(`/api/sync/run?full=${full}`, { method: "POST" });
   if (!res.ok) throw new Error("Sync fehlgeschlagen");
   return res.json();
+}
+
+export async function createSite(prefix: string, site: string): Promise<SiteMapping> {
+  const res = await fetch(`/api/sites`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ prefix, site }),
+  });
+  if (!res.ok) throw new Error("Standort konnte nicht gespeichert werden");
+  return res.json();
+}
+
+export async function deleteSite(id: number): Promise<void> {
+  const res = await fetch(`/api/sites/${id}`, { method: "DELETE" });
+  if (!res.ok) throw new Error("Standort konnte nicht gelöscht werden");
+}
+
+export async function resetData(): Promise<void> {
+  const res = await fetch(`/api/admin/reset`, { method: "POST" });
+  if (!res.ok) throw new Error("Zurücksetzen fehlgeschlagen");
 }

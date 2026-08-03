@@ -87,6 +87,36 @@ h1 {
   margin: 0 0 4px;
 }
 
+h2 {
+  font-size: 1.05rem;
+  margin: 0 0 8px;
+}
+
+.settings-panel {
+  margin-bottom: 20px;
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+
+.tabs button {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 8px 4px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.tabs button.active {
+  color: var(--text-primary);
+  border-bottom-color: var(--series-1);
+}
+
 .subtitle {
   color: var(--text-secondary);
   margin: 0 0 24px;
