@@ -1,4 +1,4 @@
-import type { CallType, Direction, Filters, ServiceSegment, SiteMapping } from "../types";
+import type { CallType, Direction, Filters, ServiceSegment } from "../types";
 
 const DIRECTIONS: { value: Direction; label: string }[] = [
   { value: "in", label: "Eingehend" },
@@ -21,12 +21,9 @@ const SERVICE_SEGMENTS: { value: ServiceSegment; label: string }[] = [
 interface Props {
   filters: Filters;
   onChange: (filters: Filters) => void;
-  sites: SiteMapping[];
 }
 
-export default function FilterBar({ filters, onChange, sites }: Props) {
-  const siteNames = Array.from(new Set(sites.map((s) => s.site))).sort();
-
+export default function FilterBar({ filters, onChange }: Props) {
   function toggle<T extends string>(list: T[], value: T): T[] {
     return list.includes(value) ? list.filter((v) => v !== value) : [...list, value];
   }
@@ -50,21 +47,6 @@ export default function FilterBar({ filters, onChange, sites }: Props) {
           value={filters.date_to}
           onChange={(e) => onChange({ ...filters, date_to: e.target.value })}
         />
-      </div>
-
-      <div className="filter-field">
-        <label>Standort</label>
-        <div className="chip-group">
-          {siteNames.map((site) => (
-            <span
-              key={site}
-              className={`chip ${filters.site.includes(site) ? "active" : ""}`}
-              onClick={() => onChange({ ...filters, site: toggle(filters.site, site) })}
-            >
-              {site}
-            </span>
-          ))}
-        </div>
       </div>
 
       <div className="filter-field">

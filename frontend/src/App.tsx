@@ -6,6 +6,7 @@ import CallsTable from "./components/CallsTable";
 import FilterBar from "./components/FilterBar";
 import ParticipantsTable from "./components/ParticipantsTable";
 import SettingsPanel from "./components/SettingsPanel";
+import SitePicker from "./components/SitePicker";
 import StatTiles from "./components/StatTiles";
 import SyncStatus from "./components/SyncStatus";
 import { emptyFilters } from "./types";
@@ -15,6 +16,7 @@ const PAGE_SIZE = 25;
 
 export default function App() {
   const [tab, setTab] = useState<"dashboard" | "settings">("dashboard");
+  const [selectedSite, setSelectedSite] = useState<string | null>(null);
   const [filters, setFilters] = useState<Filters>(emptyFilters);
   const [page, setPage] = useState(1);
 
@@ -37,10 +39,16 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    setFilters((f) => ({ ...f, site: selectedSite ? [selectedSite] : [] }));
+    setPage(1);
+  }, [selectedSite]);
+
+  useEffect(() => {
     setPage(1);
   }, [filters]);
 
   useEffect(() => {
+    if (!selectedSite) return;
     let cancelled = false;
     setError(null);
     Promise.all([fetchSummary(filters), fetchCalls(filters, page, PAGE_SIZE), fetchParticipants(filters)])
@@ -54,10 +62,11 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [filters, page]);
+  }, [filters, page, selectedSite]);
 
   function refreshAfterSync() {
     fetchSyncStatus().then((s) => setLastRun(s.last_run));
+    if (!selectedSite) return;
     fetchSummary(filters).then(setSummary);
     fetchCalls(filters, page, PAGE_SIZE).then(setCalls);
     fetchParticipants(filters).then(setParticipants);
@@ -83,29 +92,39 @@ export default function App() {
         <SettingsPanel sites={sites} onSitesChanged={reloadSites} onDataChanged={refreshAfterSync} />
       ) : (
         <>
-          <SyncStatus lastRun={lastRun} onSynced={refreshAfterSync} />
+          <SitePicker siteNames={allSiteNames} selected={selectedSite} onSelect={setSelectedSite} />
 
-          <FilterBar filters={filters} onChange={setFilters} sites={sites} />
-
-          {error && (
-            <div className="card" style={{ marginBottom: 16, color: "var(--status-critical)" }}>
-              {error}
+          {!selectedSite ? (
+            <div className="card" style={{ color: "var(--text-muted)" }}>
+              Bitte oben einen Standort auswählen, um die Anrufstatistik zu sehen.
             </div>
-          )}
-
-          {summary && (
+          ) : (
             <>
-              <StatTiles summary={summary} />
-              <div className="charts-row">
-                <CallsPerDayChart data={summary.calls_per_day} />
-                <CallsPerSiteChart data={summary.calls_per_site} allSiteNames={allSiteNames} />
-              </div>
+              <SyncStatus lastRun={lastRun} onSynced={refreshAfterSync} />
+
+              <FilterBar filters={filters} onChange={setFilters} />
+
+              {error && (
+                <div className="card" style={{ marginBottom: 16, color: "var(--status-critical)" }}>
+                  {error}
+                </div>
+              )}
+
+              {summary && (
+                <>
+                  <StatTiles summary={summary} />
+                  <div className="charts-row">
+                    <CallsPerDayChart data={summary.calls_per_day} />
+                    <CallsPerSiteChart data={summary.calls_per_site} allSiteNames={allSiteNames} />
+                  </div>
+                </>
+              )}
+
+              <ParticipantsTable data={participants} />
+
+              <CallsTable data={calls} page={page} pageSize={PAGE_SIZE} onPageChange={setPage} />
             </>
           )}
-
-          <ParticipantsTable data={participants} />
-
-          <CallsTable data={calls} page={page} pageSize={PAGE_SIZE} onPageChange={setPage} />
         </>
       )}
     </>
