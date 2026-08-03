@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>ncall-dashboard</Name>
+  <Repository>ghcr.io/1899nils/ncall-dashboard:latest</Repository>
+  <Registry>https://ghcr.io/1899nils/ncall-dashboard</Registry>
+  <Network>bridge</Network>
+  <MyIP/>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/1899nils/nCall-Dashboard</Support>
+  <Project>https://github.com/1899nils/nCall-Dashboard</Project>
+  <Overview>Anrufstatistik-Dashboard fuer eine Auerswald COMtrexx Telefonanlage. Zieht taeglich automatisch die Gespraechsdaten und zeigt sie im Browser mit Filtern nach Standort, Richtung, Nebenstelle und Zeitraum an.</Overview>
+  <Category>Tools:</Category>
+  <WebUI>http://[IP]:[PORT:8080]/</WebUI>
+  <TemplateURL>https://raw.githubusercontent.com/1899nils/nCall-Dashboard/claude/auerswald-call-stats-dashboard-vkb2bc/unraid/ncall-dashboard.xml</TemplateURL>
+  <Icon/>
+  <ExtraParams/>
+  <PostArgs/>
+  <CPUset/>
+  <DateInstalled/>
+  <DonateText/>
+  <DonateLink/>
+  <Requires/>
+  <Config Name="WebUI Port" Target="8080" Default="8080" Mode="tcp" Description="Port fuer das Dashboard im Browser" Type="Port" Display="always" Required="true" Mask="false">8080</Config>
+  <Config Name="Daten-Verzeichnis" Target="/data" Default="/mnt/user/appdata/ncall-dashboard" Mode="rw" Description="Speicherort der SQLite-Datenbank (bleibt bei Updates/Neustarts erhalten)" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/ncall-dashboard</Config>
+  <Config Name="Zeitzone" Target="TZ" Default="Europe/Berlin" Mode="" Description="Zeitzone, in der SYNC_CRON ausgewertet wird" Type="Variable" Display="always" Required="false" Mask="false">Europe/Berlin</Config>
+  <Config Name="Mock-Modus" Target="COMTREXX_MOCK" Default="true" Mode="" Description="true = Demo-Daten anzeigen, false = echte COMtrexx-Anbindung nutzen" Type="Variable" Display="always" Required="true" Mask="false">true</Config>
+  <Config Name="COMtrexx Basis-URL" Target="COMTREXX_BASE_URL" Default="" Mode="" Description="z.B. https://192.168.0.10/api/v1" Type="Variable" Display="always" Required="false" Mask="false"></Config>
+  <Config Name="COMtrexx Benutzer" Target="COMTREXX_USERNAME" Default="" Mode="" Description="API-Benutzer der COMtrexx (Leserecht auf Gespraechsdaten genuegt)" Type="Variable" Display="always" Required="false" Mask="false"></Config>
+  <Config Name="COMtrexx Passwort" Target="COMTREXX_PASSWORD" Default="" Mode="" Description="Passwort des API-Benutzers" Type="Variable" Display="always" Required="false" Mask="true"></Config>
+  <Config Name="Zertifikat pruefen" Target="COMTREXX_VERIFY_SSL" Default="true" Mode="" Description="Auf false setzen, falls die COMtrexx ein selbstsigniertes Zertifikat verwendet" Type="Variable" Display="advanced" Required="false" Mask="false">true</Config>
+  <Config Name="Sync-Zeitplan (Cron)" Target="SYNC_CRON" Default="15 0 * * *" Mode="" Description="5-Feld Cron-Ausdruck fuer den taeglichen Sync" Type="Variable" Display="advanced" Required="false" Mask="false">15 0 * * *</Config>
+  <Config Name="Backfill Tage" Target="SYNC_LOOKBACK_DAYS" Default="2" Mode="" Description="Rueckwirkender Zeitraum beim allerersten Sync-Lauf" Type="Variable" Display="advanced" Required="false" Mask="false">2</Config>
+  <Config Name="Standort-Mapping (JSON)" Target="SITE_MAPPING_SEED" Default="[]" Mode="" Description='Optionales Seed-Mapping, z.B. [{"prefix":"10","site":"Zentrale"}]' Type="Variable" Display="advanced" Required="false" Mask="false">[]</Config>
+</Container>

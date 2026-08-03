@@ -16,6 +16,60 @@ docker compose up --build -d
 
 Danach im Browser öffnen: `http://<server>:8080`
 
+## Installation auf Unraid
+
+Es gibt ein fertiges Image unter `ghcr.io/1899nils/ncall-dashboard:latest`,
+gebaut per GitHub Actions bei jedem Push (`.github/workflows/docker-publish.yml`).
+Kein lokaler Build auf Unraid nötig.
+
+**Einmalig (falls noch nicht geschehen):** Das GHCR-Paket muss auf öffentlich
+gestellt werden, sonst kann Unraid es ohne Login nicht ziehen: auf GitHub unter
+`https://github.com/1899nils?tab=packages` → Paket `ncall-dashboard` öffnen →
+„Package settings“ → „Change visibility“ → **Public**.
+
+### Variante A: Container manuell anlegen (funktioniert immer)
+
+1. Unraid-Weboberfläche → Tab **Docker** → **Add Container** (unten).
+2. Folgende Felder ausfüllen:
+   - **Name**: `ncall-dashboard`
+   - **Repository**: `ghcr.io/1899nils/ncall-dashboard:latest` ← das ist der „Link“
+   - **Network Type**: `bridge`
+3. Unter „Add another Path, Port, Variable…“ hinzufügen:
+
+   | Typ | Name | Container-Port/-Pfad/-Variable | Wert |
+   |---|---|---|---|
+   | Port | WebUI | `8080` | `8080` |
+   | Path | Daten | `/data` | `/mnt/user/appdata/ncall-dashboard` |
+   | Variable | `TZ` | – | `Europe/Berlin` |
+   | Variable | `COMTREXX_MOCK` | – | `true` (Demo) bzw. `false` (live) |
+   | Variable | `COMTREXX_BASE_URL` | – | `https://<comtrexx-ip>/api/v1` |
+   | Variable | `COMTREXX_USERNAME` | – | API-Benutzer |
+   | Variable | `COMTREXX_PASSWORD` | – | Passwort |
+
+4. **Apply** klicken — Unraid zieht das Image und startet den Container.
+5. Dashboard öffnen: `http://<unraid-ip>:8080`
+
+### Variante B: Fertiges Template verwenden (Community Applications)
+
+Falls das CA-Plugin installiert ist: **Apps** → Zahnrad-Icon → **Template
+Repositories** → folgende URL eintragen und speichern:
+
+```
+https://github.com/1899nils/nCall-Dashboard
+```
+
+Danach ist „ncall-dashboard“ in **Apps** → „Local“/eigene Vorlagen suchbar und
+lässt sich per Klick installieren (Port, Pfad und Variablen sind schon aus
+`unraid/ncall-dashboard.xml` vorausgefüllt, Zugangsdaten müsst ihr noch
+eintragen).
+
+### Live-Betrieb
+
+Sobald `COMTREXX_MOCK=false` sowie `COMTREXX_BASE_URL`/`COMTREXX_USERNAME`/
+`COMTREXX_PASSWORD` gesetzt sind, Container neu starten und im Dashboard auf
+„Jetzt synchronisieren“ klicken (siehe Abschnitt „COMtrexx-Anbindung
+einrichten“ unten).
+
 ## Architektur
 
 ```
