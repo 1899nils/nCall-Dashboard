@@ -1,0 +1,31 @@
+services:
+  ncall-dashboard:
+    build: .
+    image: ncall-dashboard:latest
+    ports:
+      - "8080:8080"
+    environment:
+      TZ: "Europe/Berlin"
+
+      # COMtrexx connection — set COMTREXX_MOCK=false once verified against
+      # your system (see README "COMtrexx-Anbindung einrichten").
+      COMTREXX_MOCK: "true"
+      COMTREXX_BASE_URL: "https://192.168.0.10"
+      COMTREXX_USERNAME: ""
+      COMTREXX_PASSWORD: ""
+      COMTREXX_VERIFY_SSL: "true"
+      COMTREXX_CALL_ENDPOINT: "/api/v1/callJournal"
+
+      # Daily sync at 00:15
+      SYNC_CRON: "15 0 * * *"
+      SYNC_LOOKBACK_DAYS: "2"
+
+      # Optional: seed the extension→Standort mapping on first start, e.g.
+      # '[{"prefix":"10","site":"Zentrale"},{"prefix":"20","site":"Standort Nord"}]'
+      SITE_MAPPING_SEED: "[]"
+    volumes:
+      - ncall_data:/data
+    restart: unless-stopped
+
+volumes:
+  ncall_data:
