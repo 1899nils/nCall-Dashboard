@@ -6,15 +6,17 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="", env_file=".env", extra="ignore")
 
-    # COMtrexx connection
+    # COMtrexx connection. base_url should include the API version path,
+    # e.g. "https://192.168.0.10/api/v1" (verified against COMtrexx API
+    # v0.0.37's own ctx-api-v1.yml, downloaded from a live system via
+    # /api/system/api).
     comtrexx_base_url: str = ""
     comtrexx_username: str = ""
     comtrexx_password: str = ""
     comtrexx_verify_ssl: bool = True
-    # Path of the call-journal endpoint on the COMtrexx REST API. Verify this
-    # against the box's own OpenAPI spec (https://<comtrexx-ip>/api/system/api)
-    # before going live — Auerswald does not publish it outside that spec.
-    comtrexx_call_endpoint: str = "/api/v1/callJournal"
+    comtrexx_login_endpoint: str = "/login"
+    comtrexx_call_endpoint: str = "/calldata"
+    comtrexx_page_size: int = 500
     comtrexx_request_timeout: float = 30.0
 
     # Demo/mock mode: generates synthetic call data instead of calling a real

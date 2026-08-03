@@ -30,9 +30,9 @@ def site_mapping_seed() -> list[dict[str, str]]:
 
 
 def generate_mock_records(since: datetime, until: datetime) -> list[dict]:
-    """Generate plausible call-journal records between `since` and `until`,
-    already shaped like the output of ComtrexxClient.fetch_call_journal()
-    (i.e. raw records, to be passed through map_record())."""
+    """Generate plausible /calldata records between `since` and `until`,
+    shaped exactly like the real COMtrexx API response (see client.py) so
+    the same map_record() handles both mock and real data."""
     records = []
     current = since
     while current < until:
@@ -41,19 +41,20 @@ def generate_mock_records(since: datetime, until: datetime) -> list[dict]:
             for _ in range(random.randint(0, 4)):
                 prefix, _ = random.choice(_SITES)
                 extension = prefix + str(random.randint(1, 9))
-                direction = random.choices(["in", "out", "missed"], weights=[45, 45, 10])[0]
+                outcome = random.choices(["in", "out", "missed"], weights=[45, 45, 10])[0]
                 started = current + timedelta(minutes=random.randint(0, 59))
-                duration = 0 if direction == "missed" else random.randint(15, 900)
+                duration = 0 if outcome == "missed" else random.randint(15, 900)
                 records.append(
                     {
-                        "id": str(uuid.uuid4()),
-                        "startTime": started.isoformat(),
-                        "duration": duration,
-                        "direction": "incoming" if direction in ("in", "missed") else "outgoing",
-                        "missed": direction == "missed",
-                        "extension": extension,
-                        "internalName": f"NST {extension}",
-                        "externalNumber": random.choice(_EXTERNAL_NUMBERS),
+                        "CallDataId": str(uuid.uuid4()),
+                        "startDate": started.isoformat(),
+                        "length": duration,
+                        "direction": "Outgoing" if outcome == "out" else "Incoming",
+                        "success": outcome != "missed",
+                        "userNumber": extension,
+                        "userName": f"NST {extension}",
+                        "externalPhoneNumber": random.choice(_EXTERNAL_NUMBERS),
+                        "externalName": None,
                     }
                 )
         current += timedelta(hours=1)

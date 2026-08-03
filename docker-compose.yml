@@ -7,14 +7,14 @@ services:
     environment:
       TZ: "Europe/Berlin"
 
-      # COMtrexx connection — set COMTREXX_MOCK=false once verified against
-      # your system (see README "COMtrexx-Anbindung einrichten").
+      # COMtrexx connection — set COMTREXX_MOCK=false once ready to go live
+      # (see README "COMtrexx-Anbindung einrichten"). base_url must include
+      # the API version path.
       COMTREXX_MOCK: "true"
-      COMTREXX_BASE_URL: "https://192.168.0.10"
+      COMTREXX_BASE_URL: "https://192.168.0.10/api/v1"
       COMTREXX_USERNAME: ""
       COMTREXX_PASSWORD: ""
       COMTREXX_VERIFY_SSL: "true"
-      COMTREXX_CALL_ENDPOINT: "/api/v1/callJournal"
 
       # Daily sync at 00:15
       SYNC_CRON: "15 0 * * *"

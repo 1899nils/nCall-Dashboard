@@ -30,30 +30,39 @@ Docker-Container
 
 ## COMtrexx-Anbindung einrichten
 
-Der genaue REST-Endpunkt für das Gesprächsjournal ist nicht öffentlich
-dokumentiert — er muss einmalig an eurer Anlage verifiziert werden:
+Der Connector ist gegen die echte COMtrexx-API (v0.0.37, `ctx-api-v1.yml`
+von einer laufenden Anlage) implementiert:
 
-1. Als Admin in die COMtrexx-Weboberfläche einloggen.
-2. `https://<comtrexx-ip>/api/system/api` öffnen — das lädt die
-   `ctx-api-v1.yml` (OpenAPI-Spezifikation) für eure Firmware-Version.
-3. Darin den Endpunkt für Anruf-/Gesprächsjournal suchen (Feldnamen für
-   Zeitstempel, Dauer, Richtung, Nebenstelle, externe Rufnummer notieren).
-4. In `backend/app/comtrexx/client.py`:
-   - `COMTREXX_CALL_ENDPOINT` (Env-Var) auf den gefundenen Pfad setzen.
-   - Falls die Feldnamen von den Platzhaltern in `map_record()` abweichen,
-     dort anpassen (ist bewusst an einer Stelle gebündelt).
-5. In `docker-compose.yml` (oder `.env`) setzen:
+- **Login**: `POST /login` mit HTTP-Basic-Auth-Header → COMtrexx setzt ein
+  `ctx_sessionid`-Cookie (Session, ca. 24h gültig). Der Connector loggt sich
+  bei Bedarf automatisch (neu) ein.
+- **Anrufdaten**: `GET /calldata` (paginiert über `limit`/`offset`, da die
+  API keinen serverseitigen Datumsfilter kennt — der Connector blättert
+  selbst durch und filtert clientseitig; Duplikate werden beim Sync anhand
+  der `CallDataId` verworfen).
+
+Um live zu gehen:
+
+1. Einen API-Benutzer in COMtrexx anlegen (mit Zugriff auf alle Nebenstellen/
+   Gesprächsdaten, nicht nur den eigenen Account) — reines Leserecht reicht.
+2. In `docker-compose.yml` (oder `.env`) setzen:
    ```
    COMTREXX_MOCK=false
-   COMTREXX_BASE_URL=https://<comtrexx-ip>
+   COMTREXX_BASE_URL=https://<comtrexx-ip>/api/v1
    COMTREXX_USERNAME=<api-user>
    COMTREXX_PASSWORD=<passwort>
+   # Falls die Anlage ein selbstsigniertes Zertifikat nutzt:
+   COMTREXX_VERIFY_SSL=false
    ```
-6. Container neu starten und über den Button „Jetzt synchronisieren“ im
+3. Container neu starten und über den Button „Jetzt synchronisieren“ im
    Dashboard (oder `POST /api/sync/run`) einen Testlauf auslösen; Fehler
    erscheinen im Sync-Status und in `docker compose logs`.
 
-Bis Schritt 5 erledigt ist, läuft der Container im Mock-Modus weiter — das
+Falls sich Feldnamen oder Endpunkte mit eurer Firmware-Version unterscheiden,
+ist alles an einer Stelle gebündelt: `backend/app/comtrexx/client.py`
+(`fetch_call_journal` fürs Abrufen, `map_record` fürs Feld-Mapping).
+
+Bis Schritt 2 erledigt ist, läuft der Container im Mock-Modus weiter — das
 Dashboard ist unabhängig davon voll benutzbar.
 
 ## Standort-Zuordnung (8 Standorte)

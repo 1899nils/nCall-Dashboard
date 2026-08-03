@@ -1,17 +1,22 @@
-"""Client for the COMtrexx REST API.
+"""Client for the COMtrexx REST API (verified against COMtrexx API v0.0.37,
+ctx-api-v1.yml pulled from a live system via /api/system/api).
 
-The exact endpoint path, query parameters and payload shape for the call
-journal are NOT publicly documented by Auerswald outside the OpenAPI spec
-that a given COMtrexx exposes itself. Before pointing this at a real system:
+Auth flow (see /login, /calldata, securitySchemes.cookieAuth in the spec):
+1. POST {base_url}/login with HTTP Basic Auth in the Authorization header.
+   The response sets a `ctx_sessionid` cookie (Max-Age ~24h).
+2. Send that cookie on subsequent requests (httpx.Client does this
+   automatically for requests made with the same client instance).
 
-1. Log into the COMtrexx web UI as admin.
-2. Open https://<comtrexx-ip>/api/system/api to download the current
-   ctx-api-v1.yml for your firmware version.
-3. Find the call-journal / call-log endpoint and its field names.
-4. Adjust COMTREXX_CALL_ENDPOINT (env var) and `_map_record()` below to match.
-
-Until that's done, run with COMTREXX_MOCK=true (the default) to develop and
-demo against synthetic data with the same shape.
+Call data (GET /calldata):
+- Query params: UserId (optional, restricts to one user), limit, offset —
+  there is NO server-side "since"/date filter, so we page through the full
+  result set and filter by startDate on our side. Sync-time dedup happens
+  via CallDataId (see app/sync.py), so re-fetching old pages is harmless.
+- Response envelope: {"_links": {"totalCount": ..., ...}, "data": [CallData, ...]}.
+- CallData fields: CallDataId, startDate, length (seconds), externalName,
+  externalPhoneNumber, msn, userNumber, userName, connectedUserNumber,
+  connectedUserName, groupNumber, groupName, cost, costFactor,
+  direction ("Incoming"/"Outgoing"), callType, success (bool).
 """
 
 from datetime import datetime
@@ -31,64 +36,96 @@ class ComtrexxClient:
         self.settings = settings
         self._client = httpx.Client(
             base_url=settings.comtrexx_base_url,
-            auth=(settings.comtrexx_username, settings.comtrexx_password),
             verify=settings.comtrexx_verify_ssl,
             timeout=settings.comtrexx_request_timeout,
         )
+        self._logged_in = False
 
     def close(self) -> None:
         self._client.close()
 
-    def fetch_call_journal(self, since: datetime) -> list[dict[str, Any]]:
-        """Fetch raw call journal records created at/after `since`."""
+    def _login(self) -> None:
         try:
-            response = self._client.get(
-                self.settings.comtrexx_call_endpoint,
-                params={"since": since.isoformat()},
+            response = self._client.post(
+                self.settings.comtrexx_login_endpoint,
+                auth=httpx.BasicAuth(
+                    self.settings.comtrexx_username, self.settings.comtrexx_password
+                ),
             )
             response.raise_for_status()
         except httpx.HTTPError as exc:
-            raise ComtrexxError(f"COMtrexx call journal request failed: {exc}") from exc
+            raise ComtrexxError(f"COMtrexx login failed: {exc}") from exc
+        # Session cookie (ctx_sessionid) is now stored in self._client's cookie jar.
+        self._logged_in = True
 
-        payload = response.json()
-        # Some REST APIs wrap the list in an envelope (e.g. {"items": [...]});
-        # handle both a bare list and a common envelope key.
-        if isinstance(payload, dict):
-            for key in ("items", "results", "data", "callJournal"):
-                if key in payload and isinstance(payload[key], list):
-                    return payload[key]
-            return []
-        return payload
+    def fetch_call_journal(self, since: datetime) -> list[dict[str, Any]]:
+        """Fetch raw /calldata records with startDate >= `since`.
+
+        Pages through the full result set (no server-side date filter is
+        available) and stops once a full page comes back short.
+        """
+        if not self._logged_in:
+            self._login()
+
+        records: list[dict[str, Any]] = []
+        offset = 0
+        limit = self.settings.comtrexx_page_size
+
+        while True:
+            try:
+                response = self._client.get(
+                    self.settings.comtrexx_call_endpoint,
+                    params={"limit": limit, "offset": offset},
+                )
+                if response.status_code == 401:
+                    # Session expired: re-login once and retry this page.
+                    self._login()
+                    response = self._client.get(
+                        self.settings.comtrexx_call_endpoint,
+                        params={"limit": limit, "offset": offset},
+                    )
+                response.raise_for_status()
+            except httpx.HTTPError as exc:
+                raise ComtrexxError(f"COMtrexx call data request failed: {exc}") from exc
+
+            payload = response.json()
+            page = payload.get("data", []) if isinstance(payload, dict) else payload
+            records.extend(page)
+
+            if len(page) < limit:
+                break
+            offset += limit
+
+        filtered = []
+        for raw in records:
+            started_raw = raw.get("startDate")
+            if not started_raw:
+                continue
+            started = datetime.fromisoformat(started_raw.replace("Z", "+00:00"))
+            if started.replace(tzinfo=None) >= since.replace(tzinfo=None):
+                filtered.append(raw)
+        return filtered
 
 
 def map_record(raw: dict[str, Any]) -> dict[str, Any]:
-    """Normalize a raw COMtrexx call-journal record into our Call schema.
+    """Normalize a raw COMtrexx /calldata record into our Call schema."""
 
-    Field names below are best-guess placeholders based on typical CDR
-    payloads and must be verified/adjusted against a real response.
-    """
-
-    def pick(*keys: str, default=None):
-        for key in keys:
-            if key in raw and raw[key] not in (None, ""):
-                return raw[key]
-        return default
-
-    direction_raw = str(pick("direction", "callDirection", default="")).lower()
-    if "in" in direction_raw:
-        direction = "missed" if pick("missed", "wasMissed", default=False) else "in"
-    elif "out" in direction_raw:
+    direction_raw = raw.get("direction", "")
+    success = raw.get("success", True)
+    if direction_raw == "Incoming":
+        direction = "in" if success else "missed"
+    elif direction_raw == "Outgoing":
         direction = "out"
     else:
         direction = "in"
 
     return {
-        "external_id": str(pick("id", "callId", "uuid")),
-        "started_at": pick("startTime", "timestamp", "date"),
-        "duration_seconds": int(pick("duration", "durationSeconds", default=0) or 0),
+        "external_id": str(raw.get("CallDataId")),
+        "started_at": raw.get("startDate"),
+        "duration_seconds": int(raw.get("length") or 0),
         "direction": direction,
-        "internal_number": str(pick("extension", "internalNumber", "user", default="")),
-        "internal_name": pick("internalName", "userName"),
-        "external_number": pick("externalNumber", "remoteNumber", "phoneNumber"),
-        "external_name": pick("externalName", "remoteName", "contactName"),
+        "internal_number": str(raw.get("userNumber") or raw.get("connectedUserNumber") or ""),
+        "internal_name": raw.get("userName") or raw.get("connectedUserName"),
+        "external_number": raw.get("externalPhoneNumber"),
+        "external_name": raw.get("externalName"),
     }
