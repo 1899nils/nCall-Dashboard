@@ -8,6 +8,7 @@ const DIRECTIONS: { value: Direction; label: string }[] = [
 
 const CALL_TYPES: { value: CallType; label: string }[] = [
   { value: "external", label: "Extern" },
+  { value: "internal", label: "Intern" },
   { value: "internal_forwarded", label: "Intern weitergeleitet" },
   { value: "external_forwarded", label: "Extern weitergeleitet" },
 ];

@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Query
@@ -9,6 +9,39 @@ from app.database import get_session
 from app.models import Call, KnownUser
 
 router = APIRouter(prefix="/api/stats", tags=["stats"])
+
+# How long after a missed call a later outgoing call to the same external
+# number still counts as a callback.
+CALLBACK_WINDOW = timedelta(hours=72)
+
+
+def _callback_rate(session: Session, missed: list[Call]) -> tuple[int, Optional[float]]:
+    """Of the given missed calls, how many were followed up by an outgoing
+    call to the same external number within CALLBACK_WINDOW? Matches
+    against ALL outgoing calls (not just the current filter/date range) so
+    a narrow date filter doesn't undercount callbacks made just after it,
+    and doesn't care which extension made the callback - a colleague
+    returning a missed call still counts."""
+    if not missed:
+        return 0, None
+
+    outgoing = session.exec(
+        select(Call.external_number, Call.started_at).where(Call.direction == "out")
+    ).all()
+    outgoing_by_number: dict[str, list] = {}
+    for number, started_at in outgoing:
+        if number:
+            outgoing_by_number.setdefault(number, []).append(started_at)
+
+    called_back = 0
+    for c in missed:
+        if not c.external_number:
+            continue
+        times = outgoing_by_number.get(c.external_number, [])
+        if any(c.started_at < t <= c.started_at + CALLBACK_WINDOW for t in times):
+            called_back += 1
+
+    return called_back, round(called_back / len(missed) * 100, 1)
 
 
 def _fetch_filtered_calls(
@@ -50,9 +83,11 @@ def summary(
     )
 
     total_calls = len(calls)
-    missed_calls = sum(1 for c in calls if c.direction == "missed")
+    missed = [c for c in calls if c.direction == "missed"]
+    missed_calls = len(missed)
     answered = [c for c in calls if c.duration_seconds > 0]
     avg_duration = round(sum(c.duration_seconds for c in answered) / len(answered), 1) if answered else 0
+    called_back_calls, callback_rate_percent = _callback_rate(session, missed)
 
     per_day: dict[str, int] = {}
     per_site: dict[str, int] = {}
@@ -74,6 +109,8 @@ def summary(
     return {
         "total_calls": total_calls,
         "missed_calls": missed_calls,
+        "called_back_calls": called_back_calls,
+        "callback_rate_percent": callback_rate_percent,
         "avg_duration_seconds": avg_duration,
         "calls_per_day": calls_per_day,
         "calls_per_site": calls_per_site,

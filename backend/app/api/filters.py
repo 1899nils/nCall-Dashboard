@@ -1,17 +1,33 @@
 from datetime import date, datetime, time
 from typing import Optional
 
+from sqlalchemy import and_, or_
+
 from app.models import Call
 
-# Friendly call-type filter keys -> raw COMtrexx callType values (see
-# app/comtrexx/client.py for how these are derived from the API).
-CALL_TYPE_MAP = {
-    "external": ["Normal"],
-    "internal_forwarded": ["CfIntern"],
-    "external_forwarded": ["CfExtern"],
-}
-
 SERVICE_SEGMENTS = ("business", "off_hours", "weekend")
+
+
+def _call_type_clause(key: str):
+    """Friendly Anruftyp filter -> SQL clause.
+
+    COMtrexx's callType only distinguishes forwarding (CfIntern/CfExtern);
+    a plain "Normal" call is used for BOTH a genuine external call and a
+    purely internal one (colleague calling colleague, no external number
+    involved at all). Tell those two apart by whether external_number is
+    set, rather than by callType alone.
+    """
+    no_external_number = or_(Call.external_number.is_(None), Call.external_number == "")
+    has_external_number = and_(Call.external_number.isnot(None), Call.external_number != "")
+    if key == "external":
+        return and_(Call.call_type == "Normal", has_external_number)
+    if key == "internal":
+        return and_(Call.call_type == "Normal", no_external_number)
+    if key == "internal_forwarded":
+        return Call.call_type == "CfIntern"
+    if key == "external_forwarded":
+        return Call.call_type == "CfExtern"
+    return None
 
 
 def apply_call_filters(
@@ -40,8 +56,9 @@ def apply_call_filters(
     if min_duration is not None:
         statement = statement.where(Call.duration_seconds >= min_duration)
     if call_type:
-        raw_values = [v for key in call_type for v in CALL_TYPE_MAP.get(key, [])]
-        statement = statement.where(Call.call_type.in_(raw_values))
+        clauses = [c for c in (_call_type_clause(key) for key in call_type) if c is not None]
+        if clauses:
+            statement = statement.where(or_(*clauses))
     return statement
 
 

@@ -31,11 +31,15 @@ export default function App() {
     fetchSites().then(setSites).catch(() => {});
   }
 
-  useEffect(() => {
-    reloadSites();
+  function reloadSyncStatus() {
     fetchSyncStatus()
       .then((s) => setLastRun(s.last_run))
       .catch(() => {});
+  }
+
+  useEffect(() => {
+    reloadSites();
+    reloadSyncStatus();
   }, []);
 
   useEffect(() => {
@@ -48,7 +52,6 @@ export default function App() {
   }, [filters]);
 
   useEffect(() => {
-    if (!selectedSite) return;
     let cancelled = false;
     setError(null);
     Promise.all([fetchSummary(filters), fetchCalls(filters, page, PAGE_SIZE), fetchParticipants(filters)])
@@ -62,11 +65,10 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [filters, page, selectedSite]);
+  }, [filters, page]);
 
   function refreshAfterSync() {
-    fetchSyncStatus().then((s) => setLastRun(s.last_run));
-    if (!selectedSite) return;
+    reloadSyncStatus();
     fetchSummary(filters).then(setSummary);
     fetchCalls(filters, page, PAGE_SIZE).then(setCalls);
     fetchParticipants(filters).then(setParticipants);
@@ -89,42 +91,34 @@ export default function App() {
       </div>
 
       {tab === "settings" ? (
-        <SettingsPanel sites={sites} onSitesChanged={reloadSites} onDataChanged={refreshAfterSync} />
+        <SettingsPanel sites={sites} lastRun={lastRun} onSitesChanged={reloadSites} onDataChanged={refreshAfterSync} />
       ) : (
         <>
           <SitePicker siteNames={allSiteNames} selected={selectedSite} onSelect={setSelectedSite} />
 
-          {!selectedSite ? (
-            <div className="card" style={{ color: "var(--text-muted)" }}>
-              Bitte oben einen Standort auswählen, um die Anrufstatistik zu sehen.
+          <SyncStatus lastRun={lastRun} />
+
+          <FilterBar filters={filters} onChange={setFilters} />
+
+          {error && (
+            <div className="card" style={{ marginBottom: 16, color: "var(--status-critical)" }}>
+              {error}
             </div>
-          ) : (
+          )}
+
+          {summary && (
             <>
-              <SyncStatus lastRun={lastRun} onSynced={refreshAfterSync} />
-
-              <FilterBar filters={filters} onChange={setFilters} />
-
-              {error && (
-                <div className="card" style={{ marginBottom: 16, color: "var(--status-critical)" }}>
-                  {error}
-                </div>
-              )}
-
-              {summary && (
-                <>
-                  <StatTiles summary={summary} />
-                  <div className="charts-row">
-                    <CallsPerDayChart data={summary.calls_per_day} />
-                    <CallsPerSiteChart data={summary.calls_per_site} allSiteNames={allSiteNames} />
-                  </div>
-                </>
-              )}
-
-              <ParticipantsTable data={participants} />
-
-              <CallsTable data={calls} page={page} pageSize={PAGE_SIZE} onPageChange={setPage} />
+              <StatTiles summary={summary} />
+              <div className="charts-row">
+                <CallsPerDayChart data={summary.calls_per_day} />
+                <CallsPerSiteChart data={summary.calls_per_site} allSiteNames={allSiteNames} />
+              </div>
             </>
           )}
+
+          <ParticipantsTable data={participants} />
+
+          <CallsTable data={calls} page={page} pageSize={PAGE_SIZE} onPageChange={setPage} />
         </>
       )}
     </>

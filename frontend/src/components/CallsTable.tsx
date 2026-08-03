@@ -8,10 +8,18 @@ const DIRECTION_LABEL: Record<string, string> = {
 };
 
 const CALL_TYPE_LABEL: Record<string, string> = {
-  Normal: "Extern",
   CfIntern: "Intern weitergeleitet",
   CfExtern: "Extern weitergeleitet",
 };
+
+// callType "Normal" covers both a genuine external call and a purely
+// internal one (colleague calling colleague) - COMtrexx doesn't
+// distinguish those itself, so tell them apart by external_number.
+function callTypeLabel(call: Call): string {
+  if (!call.call_type) return "–";
+  if (call.call_type === "Normal") return call.external_number ? "Extern" : "Intern";
+  return CALL_TYPE_LABEL[call.call_type] ?? call.call_type;
+}
 
 function formatDateTime(iso: string): string {
   const d = new Date(iso);
@@ -58,7 +66,7 @@ export default function CallsTable({ data, page, pageSize, onPageChange }: Props
                   {DIRECTION_LABEL[call.direction] ?? call.direction}
                 </span>
               </td>
-              <td>{call.call_type ? CALL_TYPE_LABEL[call.call_type] ?? call.call_type : "–"}</td>
+              <td>{callTypeLabel(call)}</td>
               <td>
                 {call.external_number ?? "–"}
                 {call.external_name ? ` (${call.external_name})` : ""}

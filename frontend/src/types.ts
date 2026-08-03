@@ -1,5 +1,5 @@
 export type Direction = "in" | "out" | "missed";
-export type CallType = "external" | "internal_forwarded" | "external_forwarded";
+export type CallType = "external" | "internal" | "internal_forwarded" | "external_forwarded";
 export type ServiceSegment = "business" | "off_hours" | "weekend";
 
 export interface Call {
@@ -26,6 +26,8 @@ export interface CallsResponse {
 export interface StatsSummary {
   total_calls: number;
   missed_calls: number;
+  called_back_calls: number;
+  callback_rate_percent: number | null;
   avg_duration_seconds: number;
   calls_per_day: { date: string; count: number }[];
   calls_per_site: { site: string; count: number }[];

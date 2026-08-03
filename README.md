@@ -145,16 +145,33 @@ behalten ihren alten Standort, auch wenn ihr die Bereiche später ändert. Nach
 Anpassungen daher am besten unter „Einstellungen" auf **„Vollständigen Import
 starten"** klicken, damit alle Anrufe neu zugeordnet werden.
 
-## Anruftyp, Servicezeiten & Teilnehmer-Auswertung
+## Standort-Auswahl (Dashboard-Tab)
 
-Zusätzlich zu Standort/Richtung/Zeitraum gibt es zwei weitere Filter:
+Ganz oben im Dashboard steht eine Standort-Auswahl (inkl. „Alle"). Sie
+bestimmt den Standort-Filter für die gesamte Seite darunter — Sync-Status,
+Filter, Kennzahlen, Charts, Teilnehmer-Auswertung und Anrufliste beziehen
+sich immer auf den dort gewählten Standort (Standard: „Alle").
 
-- **Anruftyp**: leitet sich aus dem COMtrexx-`callType` ab —
-  „Extern" (`Normal`, direkter externer Anruf), „Intern weitergeleitet"
+## Anruftyp, Servicezeiten, Rückrufquote & Teilnehmer-Auswertung
+
+Zusätzlich zu Richtung/Zeitraum gibt es zwei weitere Filter:
+
+- **Anruftyp**: leitet sich aus dem COMtrexx-`callType` ab. `Normal` deckt
+  sowohl echte externe Anrufe als auch reine interne Gespräche
+  (Kollege ruft Kollege, keine externe Rufnummer beteiligt) ab — COMtrexx
+  unterscheidet das selbst nicht. Wir trennen daher anhand der externen
+  Rufnummer: **„Extern"** (`Normal` + externe Nummer vorhanden), **„Intern"**
+  (`Normal` + keine externe Nummer), **„Intern weitergeleitet"**
   (`CfIntern`, nach Klingeln an eine andere Nebenstelle übergeben),
-  „Extern weitergeleitet" (`CfExtern`).
+  **„Extern weitergeleitet"** (`CfExtern`).
 - **Servicezeit**: „Mo–Fr 08–17", „Mo–Fr außerhalb", „Wochenende" — berechnet
   aus Datum/Uhrzeit des Anrufs.
+
+Die Kachel **„Rückrufquote"** zeigt, wie viele der (aktuell gefilterten)
+verpassten Anrufe innerhalb von 72 Stunden durch einen ausgehenden Anruf an
+dieselbe externe Nummer beantwortet wurden — unabhängig davon, wer
+zurückgerufen hat. Verhindert, dass ein verpasster Anruf, der zeitnah erledigt
+wurde, wie eine offene Baustelle aussieht.
 
 Die Karte **„Teilnehmer-Auswertung"** gruppiert die aktuell gefilterten
 Anrufe nach dem tatsächlichen Gesprächspartner (nicht nach dem
@@ -171,6 +188,8 @@ inkl. Gruppen — nur die Teilnehmer-Karte filtert.
 
 ## Datenverwaltung (Tab „Einstellungen")
 
+- **Jetzt synchronisieren**: löst einen normalen inkrementellen Sync aus
+  (wie der tägliche `SYNC_CRON`-Lauf, nur sofort).
 - **Alle Anrufdaten löschen**: löscht alle importierten Anrufe, die
   Sync-Historie und den internen Fortschritts-Zeitstempel — nützlich z. B. um
   Demo-Daten aus dem Mock-Modus zu entfernen, bevor man live geht.

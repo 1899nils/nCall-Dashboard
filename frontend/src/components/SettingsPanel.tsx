@@ -1,14 +1,20 @@
 import { useState } from "react";
 import { createSite, deleteSite, resetData, triggerSync } from "../api";
-import type { SiteMapping } from "../types";
+import type { SiteMapping, SyncRun } from "../types";
+
+function formatDateTime(iso?: string | null): string {
+  if (!iso) return "–";
+  return new Date(iso).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" });
+}
 
 interface Props {
   sites: SiteMapping[];
+  lastRun: SyncRun | null;
   onSitesChanged: () => void;
   onDataChanged: () => void;
 }
 
-export default function SettingsPanel({ sites, onSitesChanged, onDataChanged }: Props) {
+export default function SettingsPanel({ sites, lastRun, onSitesChanged, onDataChanged }: Props) {
   const [rangeStart, setRangeStart] = useState("");
   const [rangeEnd, setRangeEnd] = useState("");
   const [siteName, setSiteName] = useState("");
@@ -60,6 +66,24 @@ export default function SettingsPanel({ sites, onSitesChanged, onDataChanged }: 
       await resetData();
       onDataChanged();
       setMessage("Anrufdaten wurden zurückgesetzt.");
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function handleSync() {
+    setBusy("sync");
+    setMessage(null);
+    try {
+      const run = await triggerSync(false);
+      onDataChanged();
+      if (run.status === "success") {
+        setMessage(`Sync abgeschlossen: ${run.records_synced} neue Anrufe.`);
+      } else {
+        setMessage(`Sync fehlgeschlagen: ${run.error_message}`);
+      }
     } catch (err) {
       setMessage(err instanceof Error ? err.message : String(err));
     } finally {
@@ -166,7 +190,15 @@ export default function SettingsPanel({ sites, onSitesChanged, onDataChanged }: 
       <hr style={{ margin: "24px 0", border: "none", borderTop: "1px solid var(--gridline)" }} />
 
       <h2>Datenverwaltung</h2>
+      <p className="chart-title" style={{ marginBottom: 12 }}>
+        Letzter Sync: {formatDateTime(lastRun?.finished_at)} ·{" "}
+        {lastRun ? `${lastRun.records_synced} neue Anrufe` : "noch kein Lauf"}
+        {lastRun?.status === "error" && ` · Fehler: ${lastRun.error_message}`}
+      </p>
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 12 }}>
+        <button className="primary" disabled={busy === "sync"} onClick={handleSync}>
+          {busy === "sync" ? "Synchronisiere…" : "Jetzt synchronisieren"}
+        </button>
         <button className="primary" disabled={busy === "full-sync"} onClick={handleFullSync}>
           {busy === "full-sync" ? "Importiere…" : "Vollständigen Import starten"}
         </button>

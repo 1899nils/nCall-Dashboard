@@ -22,6 +22,17 @@ export default function StatTiles({ summary }: { summary: StatsSummary }) {
         <div className="value">{answeredShare}%</div>
       </div>
       <div className="card stat-tile">
+        <div className="label">Rückrufquote</div>
+        <div className="value">
+          {summary.callback_rate_percent === null ? "–" : `${summary.callback_rate_percent}%`}
+        </div>
+        {summary.missed_calls > 0 && (
+          <div className="label" style={{ marginTop: 2 }}>
+            {summary.called_back_calls} von {summary.missed_calls} zurückgerufen
+          </div>
+        )}
+      </div>
+      <div className="card stat-tile">
         <div className="label">Ø Gesprächsdauer</div>
         <div className="value">{formatDuration(summary.avg_duration_seconds)}</div>
       </div>
