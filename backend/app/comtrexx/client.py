@@ -11,7 +11,10 @@ Call data (GET /calldata):
 - Query params: UserId (optional, restricts to one user), limit, offset —
   there is NO server-side "since"/date filter, so we page through the full
   result set and filter by startDate on our side. Sync-time dedup happens
-  via CallDataId (see app/sync.py), so re-fetching old pages is harmless.
+  via external_id (see app/sync.py), so re-fetching old pages is harmless.
+  NOTE: on at least one observed firmware, every record's CallDataId is 0
+  (not a usable unique id) — see _fallback_external_id() below, which
+  fingerprints a call from its other fields instead.
 - Response envelope: {"_links": {"totalCount": ..., ...}, "data": [CallData, ...]}.
 - CallData fields: CallDataId, startDate, length (seconds), externalName,
   externalPhoneNumber, msn, userNumber, userName, connectedUserNumber,
@@ -24,6 +27,7 @@ Call data (GET /calldata):
   "external_forwarded" in the API filters (see app/api/filters.py).
 """
 
+import hashlib
 from datetime import datetime
 from typing import Any
 
@@ -112,6 +116,21 @@ class ComtrexxClient:
         return filtered
 
 
+def _fallback_external_id(raw: dict[str, Any]) -> str:
+    """Some COMtrexx firmware versions report CallDataId=0 for every record
+    (observed in practice), which would collapse all calls onto a single
+    "duplicate" after the first import. Fall back to a fingerprint of the
+    fields that together identify a call uniquely enough in practice."""
+    fingerprint_src = "|".join(
+        str(raw.get(key, ""))
+        for key in (
+            "startDate", "userNumber", "connectedUserNumber",
+            "externalPhoneNumber", "direction", "length",
+        )
+    )
+    return "fp-" + hashlib.sha1(fingerprint_src.encode("utf-8")).hexdigest()
+
+
 def map_record(raw: dict[str, Any]) -> dict[str, Any]:
     """Normalize a raw COMtrexx /calldata record into our Call schema."""
 
@@ -124,8 +143,11 @@ def map_record(raw: dict[str, Any]) -> dict[str, Any]:
     else:
         direction = "in"
 
+    raw_id = raw.get("CallDataId")
+    external_id = str(raw_id) if raw_id not in (None, 0, "0") else _fallback_external_id(raw)
+
     return {
-        "external_id": str(raw.get("CallDataId")),
+        "external_id": external_id,
         "started_at": raw.get("startDate"),
         "duration_seconds": int(raw.get("length") or 0),
         "direction": direction,
