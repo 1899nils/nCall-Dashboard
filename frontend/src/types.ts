@@ -54,6 +54,12 @@ export interface ParticipantsResponse {
   participants: ParticipantRow[];
 }
 
+export interface AppUser {
+  id: number;
+  username: string;
+  is_admin: boolean;
+}
+
 export interface SyncRun {
   id: number;
   started_at: string;

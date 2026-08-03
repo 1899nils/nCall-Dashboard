@@ -37,6 +37,18 @@ class Settings(BaseSettings):
     # objects (inclusive numeric extension range).
     site_mapping_seed: str = "[]"
 
+    # Dashboard login. The first admin account is created at startup from
+    # these two if no AppUser exists yet; further users can then be added
+    # from the Einstellungen tab. Leave ADMIN_PASSWORD empty to skip
+    # creating an account (e.g. once one already exists).
+    admin_username: str = "admin"
+    admin_password: str = ""
+
+    # Signs the login session cookie. Leave empty to auto-generate one on
+    # first start and persist it in the database (see app/auth.py) — set
+    # explicitly only if you need sessions to survive a fresh database.
+    session_secret: str = ""
+
 
 @lru_cache
 def get_settings() -> Settings:

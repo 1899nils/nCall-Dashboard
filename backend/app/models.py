@@ -48,6 +48,18 @@ class KnownUser(SQLModel, table=True):
     name: str
 
 
+class AppUser(SQLModel, table=True):
+    """A dashboard login account (separate from COMtrexx's own telephony
+    users). The first one is seeded at startup from ADMIN_USERNAME/
+    ADMIN_PASSWORD; more can be added via the Einstellungen tab."""
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    username: str = Field(index=True, unique=True)
+    password_hash: str
+    is_admin: bool = False
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
 class SyncRun(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     started_at: datetime = Field(default_factory=datetime.utcnow)

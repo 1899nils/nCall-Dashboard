@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { createSite, deleteSite, resetData, triggerSync } from "../api";
-import type { SiteMapping, SyncRun } from "../types";
+import UsersPanel from "./UsersPanel";
+import type { AppUser, SiteMapping, SyncRun } from "../types";
 
 function formatDateTime(iso?: string | null): string {
   if (!iso) return "–";
@@ -10,11 +11,12 @@ function formatDateTime(iso?: string | null): string {
 interface Props {
   sites: SiteMapping[];
   lastRun: SyncRun | null;
+  currentUser: AppUser;
   onSitesChanged: () => void;
   onDataChanged: () => void;
 }
 
-export default function SettingsPanel({ sites, lastRun, onSitesChanged, onDataChanged }: Props) {
+export default function SettingsPanel({ sites, lastRun, currentUser, onSitesChanged, onDataChanged }: Props) {
   const [rangeStart, setRangeStart] = useState("");
   const [rangeEnd, setRangeEnd] = useState("");
   const [siteName, setSiteName] = useState("");
@@ -212,6 +214,10 @@ export default function SettingsPanel({ sites, lastRun, onSitesChanged, onDataCh
         </button>
       </div>
       {message && <p className="chart-title" style={{ marginTop: 12 }}>{message}</p>}
+
+      <hr style={{ margin: "24px 0", border: "none", borderTop: "1px solid var(--gridline)" }} />
+
+      <UsersPanel currentUser={currentUser} />
     </div>
   );
 }

@@ -14,7 +14,27 @@ im Browser ausprobieren kann.
 docker compose up --build -d
 ```
 
-Danach im Browser öffnen: `http://<server>:8080`
+Danach im Browser öffnen: `http://<server>:8080` und mit `admin` / `change-me`
+(aus `docker-compose.yml`) einloggen — unbedingt danach unter
+„Einstellungen" ein eigenes Passwort/Benutzer anlegen, siehe
+[Zugriffsschutz](#zugriffsschutz-login).
+
+## Zugriffsschutz (Login)
+
+Das Dashboard verlangt einen Login, da es Rufnummern und Gesprächsverhalten
+zeigt. Beim allerersten Start (wenn noch kein Login-Account existiert) wird
+automatisch ein Admin-Account aus den Env-Variablen `ADMIN_USERNAME` /
+`ADMIN_PASSWORD` angelegt. Auf Unraid trägt man diese beiden direkt im
+„Add Container"-Dialog ein (siehe unten) — nicht im Quellcode oder in einer
+Datei.
+
+Danach kann der Admin unter dem Tab **„Einstellungen" → „Benutzer"** weitere
+Zugänge anlegen (mit oder ohne Admin-Rechte) oder wieder entfernen. Nur
+Admins sehen den „Einstellungen"-Tab; normale Benutzer sehen ausschließlich
+das Dashboard. `ADMIN_PASSWORD` wird nur beim allerersten Start verwendet
+(wenn noch kein Account existiert) — die Variable kann und sollte danach
+wieder entfernt/geändert werden, damit sie nicht dauerhaft im
+Container-Setup steht.
 
 ## Installation auf Unraid
 
@@ -41,6 +61,8 @@ gestellt werden, sonst kann Unraid es ohne Login nicht ziehen: auf GitHub unter
    | Port | WebUI | `8080` | `8080` |
    | Path | Daten | `/data` | `/mnt/user/appdata/ncall-dashboard` |
    | Variable | `TZ` | – | `Europe/Berlin` |
+   | Variable | `ADMIN_USERNAME` | – | z. B. `admin` |
+   | Variable | `ADMIN_PASSWORD` | – | euer gewünschtes Login-Passwort |
    | Variable | `COMTREXX_MOCK` | – | `true` (Demo) bzw. `false` (live) |
    | Variable | `COMTREXX_BASE_URL` | – | `https://<comtrexx-ip>/api/v1` |
    | Variable | `COMTREXX_USERNAME` | – | API-Benutzer |
@@ -224,9 +246,11 @@ Reverse Proxy mit TLS versehen.
 ## Daten & Datenschutz
 
 Anrufdaten enthalten personenbezogene Daten (Rufnummern, Gesprächsverhalten).
-Zugriff auf das Dashboard entsprechend einschränken und eine
-Aufbewahrungsfrist festlegen (aktuell ist keine automatische Löschung
-implementiert).
+Das Dashboard ist per Login geschützt (siehe
+[Zugriffsschutz](#zugriffsschutz-login)) — Zugänge trotzdem nur an
+berechtigte Personen vergeben. Eine automatische Löschung nach
+Aufbewahrungsfrist ist nicht implementiert; „Alle Anrufdaten löschen" unter
+„Einstellungen" steht für manuelles Aufräumen zur Verfügung.
 
 ## Lokale Entwicklung ohne Docker
 
@@ -234,7 +258,7 @@ implementiert).
 # Backend
 cd backend
 pip install -r requirements.txt
-COMTREXX_MOCK=true DATABASE_PATH=./dev.db uvicorn app.main:app --reload --port 8080
+COMTREXX_MOCK=true DATABASE_PATH=./dev.db ADMIN_USERNAME=admin ADMIN_PASSWORD=dev uvicorn app.main:app --reload --port 8080
 
 # Frontend (separates Terminal, proxied auf Port 8080)
 cd frontend

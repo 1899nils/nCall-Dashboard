@@ -7,6 +7,13 @@ services:
     environment:
       TZ: "Europe/Berlin"
 
+      # Dashboard login. Creates one admin account on first start (only if
+      # no login accounts exist yet); further users can be added from the
+      # Einstellungen tab afterwards. Change/remove ADMIN_PASSWORD once the
+      # account exists so it isn't sitting in your container config.
+      ADMIN_USERNAME: "admin"
+      ADMIN_PASSWORD: "change-me"
+
       # COMtrexx connection — set COMTREXX_MOCK=false once ready to go live
       # (see README "COMtrexx-Anbindung einrichten"). base_url must include
       # the API version path.

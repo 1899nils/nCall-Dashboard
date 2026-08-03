@@ -23,6 +23,8 @@
   <Requires/>
   <Config Name="WebUI Port" Target="8080" Default="8080" Mode="tcp" Description="Port fuer das Dashboard im Browser" Type="Port" Display="always" Required="true" Mask="false">8080</Config>
   <Config Name="Daten-Verzeichnis" Target="/data" Default="/mnt/user/appdata/ncall-dashboard" Mode="rw" Description="Speicherort der SQLite-Datenbank (bleibt bei Updates/Neustarts erhalten)" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/ncall-dashboard</Config>
+  <Config Name="Admin-Benutzername" Target="ADMIN_USERNAME" Default="admin" Mode="" Description="Login fuers Dashboard, wird beim allerersten Start angelegt" Type="Variable" Display="always" Required="true" Mask="false">admin</Config>
+  <Config Name="Admin-Passwort" Target="ADMIN_PASSWORD" Default="" Mode="" Description="Nur beim allerersten Start noetig, danach ueber Einstellungen weitere Nutzer anlegen" Type="Variable" Display="always" Required="true" Mask="true"></Config>
   <Config Name="Zeitzone" Target="TZ" Default="Europe/Berlin" Mode="" Description="Zeitzone, in der SYNC_CRON ausgewertet wird" Type="Variable" Display="always" Required="false" Mask="false">Europe/Berlin</Config>
   <Config Name="Mock-Modus" Target="COMTREXX_MOCK" Default="true" Mode="" Description="true = Demo-Daten anzeigen, false = echte COMtrexx-Anbindung nutzen" Type="Variable" Display="always" Required="true" Mask="false">true</Config>
   <Config Name="COMtrexx Basis-URL" Target="COMTREXX_BASE_URL" Default="" Mode="" Description="z.B. https://192.168.0.10/api/v1" Type="Variable" Display="always" Required="false" Mask="false"></Config>

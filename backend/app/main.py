@@ -2,11 +2,13 @@ import json
 import logging
 import os
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.staticfiles import StaticFiles
 from sqlmodel import select
+from starlette.middleware.sessions import SessionMiddleware
 
-from app.api import admin, calls, sites, stats, sync
+from app.api import admin, auth, calls, sites, stats, sync
+from app.auth import get_current_user, get_or_create_session_secret, seed_admin_user
 from app.comtrexx.mock import site_mapping_seed
 from app.config import get_settings
 from app.database import init_db, session_scope
@@ -16,13 +18,22 @@ from app.scheduler import shutdown_scheduler, start_scheduler
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("ncall.main")
 
-app = FastAPI(title="nCall Dashboard")
+# init_db() runs at import time (not just in the startup event) because the
+# session secret below is persisted in the database and has to be ready
+# before SessionMiddleware is configured.
+init_db()
 
-app.include_router(calls.router)
-app.include_router(stats.router)
-app.include_router(sites.router)
-app.include_router(sync.router)
-app.include_router(admin.router)
+app = FastAPI(title="nCall Dashboard")
+app.add_middleware(SessionMiddleware, secret_key=get_or_create_session_secret(), same_site="lax")
+
+_login_required = [Depends(get_current_user)]
+
+app.include_router(auth.router)
+app.include_router(calls.router, dependencies=_login_required)
+app.include_router(stats.router, dependencies=_login_required)
+app.include_router(sites.router, dependencies=_login_required)
+app.include_router(sync.router, dependencies=_login_required)
+app.include_router(admin.router, dependencies=_login_required)
 
 
 @app.get("/api/health")
@@ -53,8 +64,8 @@ def _seed_site_mappings() -> None:
 
 @app.on_event("startup")
 def on_startup():
-    init_db()
     _seed_site_mappings()
+    seed_admin_user()
     start_scheduler()
 
 
@@ -64,7 +75,10 @@ def on_shutdown():
 
 
 # Serve the built frontend (see frontend/ + Dockerfile) as static files.
-# Must be mounted last so it doesn't shadow the /api routes above.
+# Must be mounted last so it doesn't shadow the /api routes above. This is
+# just the SPA shell (HTML/JS/CSS) - it contains no data, so it's fine to
+# serve unauthenticated; the SPA itself shows a login form until every
+# actual /api/* data call (protected above) succeeds.
 _frontend_dist = os.environ.get("FRONTEND_DIST", "/app/frontend_dist")
 if os.path.isdir(_frontend_dist):
     app.mount("/", StaticFiles(directory=_frontend_dist, html=True), name="frontend")
