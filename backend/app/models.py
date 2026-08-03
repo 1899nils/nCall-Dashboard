@@ -30,9 +30,22 @@ class Call(SQLModel, table=True):
 
 class SiteMapping(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    # Extension prefix, e.g. "10" matches internal numbers starting with "10".
-    prefix: str = Field(index=True, unique=True)
+    # Inclusive numeric extension range, e.g. 800-899. Not a string prefix:
+    # "starts with 800" would wrongly include 8000-8009 but exclude 801-899.
+    range_start: int = Field(index=True)
+    range_end: int
     site: str
+
+
+class KnownUser(SQLModel, table=True):
+    """Mirrors COMtrexx's real telephony users (GET /users: phoneNumber +
+    userName), refreshed on every sync. Used to filter the Teilnehmer report
+    down to actual configured people, excluding call groups (e.g. "GIE -
+    alle") and raw external numbers that can otherwise show up as the
+    "connected" party on a Call record."""
+
+    phone_number: str = Field(primary_key=True)
+    name: str
 
 
 class SyncRun(SQLModel, table=True):

@@ -32,9 +32,44 @@ def _apply_column_migrations() -> None:
         conn.commit()
 
 
+def _migrate_sitemapping_table() -> None:
+    """sitemapping originally matched extensions by string prefix
+    (Call.internal_number.startswith(prefix)), which is wrong for numeric
+    ranges: prefix "800" only matches numbers literally starting with
+    "800" (800, 8000-8009), not the intended 800-899 block. Rebuilds the
+    table with explicit range_start/range_end, backfilling each old
+    prefix as its containing hundred-block."""
+    with engine.connect() as conn:
+        cols = {row[1] for row in conn.execute(text("PRAGMA table_info(sitemapping)"))}
+        if not cols or "prefix" not in cols:
+            return  # table doesn't exist yet (create_all will make it) or already migrated
+
+        conn.execute(text("ALTER TABLE sitemapping RENAME TO sitemapping_old"))
+        conn.execute(
+            text(
+                "CREATE TABLE sitemapping ("
+                "id INTEGER PRIMARY KEY, "
+                "range_start INTEGER NOT NULL, "
+                "range_end INTEGER NOT NULL, "
+                "site VARCHAR NOT NULL)"
+            )
+        )
+        conn.execute(
+            text(
+                "INSERT INTO sitemapping (id, range_start, range_end, site) "
+                "SELECT id, (CAST(prefix AS INTEGER)/100)*100, "
+                "(CAST(prefix AS INTEGER)/100)*100 + 99, site FROM sitemapping_old"
+            )
+        )
+        conn.execute(text("DROP TABLE sitemapping_old"))
+        conn.execute(text("CREATE INDEX IF NOT EXISTS ix_sitemapping_range_start ON sitemapping (range_start)"))
+        conn.commit()
+
+
 def init_db() -> None:
     SQLModel.metadata.create_all(engine)
     _apply_column_migrations()
+    _migrate_sitemapping_table()
 
 
 def get_session():

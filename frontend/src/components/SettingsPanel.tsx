@@ -9,18 +9,26 @@ interface Props {
 }
 
 export default function SettingsPanel({ sites, onSitesChanged, onDataChanged }: Props) {
-  const [prefix, setPrefix] = useState("");
+  const [rangeStart, setRangeStart] = useState("");
+  const [rangeEnd, setRangeEnd] = useState("");
   const [siteName, setSiteName] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
   async function handleAddSite(e: React.FormEvent) {
     e.preventDefault();
-    if (!prefix.trim() || !siteName.trim()) return;
+    const start = parseInt(rangeStart, 10);
+    const end = parseInt(rangeEnd, 10);
+    if (Number.isNaN(start) || Number.isNaN(end) || !siteName.trim()) return;
+    if (end < start) {
+      setMessage("„Bis“ muss größer oder gleich „Von“ sein.");
+      return;
+    }
     setBusy("add-site");
     try {
-      await createSite(prefix.trim(), siteName.trim());
-      setPrefix("");
+      await createSite(start, end, siteName.trim());
+      setRangeStart("");
+      setRangeEnd("");
       setSiteName("");
       onSitesChanged();
     } catch (err) {
@@ -81,16 +89,18 @@ export default function SettingsPanel({ sites, onSitesChanged, onDataChanged }: 
     <div className="card settings-panel">
       <h2>Standorte</h2>
       <p className="chart-title" style={{ marginBottom: 12 }}>
-        Ordnet Nebenstellen anhand ihrer Anfangsziffern (Präfix) einem Standort zu. Bei
-        überlappenden Präfixen gewinnt der längere. Änderungen wirken sich nur auf neu
-        synchronisierte Anrufe aus — nach dem Anpassen ggf. „Vollständigen Import starten"
-        nutzen, damit bereits importierte Anrufe neu zugeordnet werden.
+        Ordnet einen numerischen Nebenstellen-Bereich (von/bis, jeweils inklusive) einem
+        Standort zu, z. B. 800-899. Bei überlappenden Bereichen gewinnt der schmalere.
+        Änderungen wirken sich nur auf neu synchronisierte Anrufe aus — nach dem Anpassen ggf.
+        „Vollständigen Import starten" nutzen, damit bereits importierte Anrufe neu zugeordnet
+        werden.
       </p>
 
       <table style={{ marginBottom: 16 }}>
         <thead>
           <tr>
-            <th>Präfix (Nebenstelle beginnt mit)</th>
+            <th>Von</th>
+            <th>Bis</th>
             <th>Standort</th>
             <th></th>
           </tr>
@@ -98,7 +108,8 @@ export default function SettingsPanel({ sites, onSitesChanged, onDataChanged }: 
         <tbody>
           {sites.map((s) => (
             <tr key={s.id}>
-              <td>{s.prefix}</td>
+              <td>{s.range_start}</td>
+              <td>{s.range_end}</td>
               <td>{s.site}</td>
               <td>
                 <button
@@ -114,7 +125,7 @@ export default function SettingsPanel({ sites, onSitesChanged, onDataChanged }: 
           ))}
           {sites.length === 0 && (
             <tr>
-              <td colSpan={3} style={{ color: "var(--text-muted)" }}>
+              <td colSpan={4} style={{ color: "var(--text-muted)" }}>
                 Noch keine Standorte konfiguriert.
               </td>
             </tr>
@@ -124,8 +135,24 @@ export default function SettingsPanel({ sites, onSitesChanged, onDataChanged }: 
 
       <form onSubmit={handleAddSite} style={{ display: "flex", gap: 8, alignItems: "flex-end", flexWrap: "wrap" }}>
         <div className="filter-field">
-          <label htmlFor="new-prefix">Präfix</label>
-          <input id="new-prefix" type="text" placeholder="z. B. 10" value={prefix} onChange={(e) => setPrefix(e.target.value)} />
+          <label htmlFor="new-range-start">Von</label>
+          <input
+            id="new-range-start"
+            type="number"
+            placeholder="z. B. 800"
+            value={rangeStart}
+            onChange={(e) => setRangeStart(e.target.value)}
+          />
+        </div>
+        <div className="filter-field">
+          <label htmlFor="new-range-end">Bis</label>
+          <input
+            id="new-range-end"
+            type="number"
+            placeholder="z. B. 899"
+            value={rangeEnd}
+            onChange={(e) => setRangeEnd(e.target.value)}
+          />
         </div>
         <div className="filter-field">
           <label htmlFor="new-site">Standortname</label>

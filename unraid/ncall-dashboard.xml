@@ -31,5 +31,5 @@
   <Config Name="Zertifikat pruefen" Target="COMTREXX_VERIFY_SSL" Default="true" Mode="" Description="Auf false setzen, falls die COMtrexx ein selbstsigniertes Zertifikat verwendet" Type="Variable" Display="advanced" Required="false" Mask="false">true</Config>
   <Config Name="Sync-Zeitplan (Cron)" Target="SYNC_CRON" Default="15 0 * * *" Mode="" Description="5-Feld Cron-Ausdruck fuer den taeglichen Sync" Type="Variable" Display="advanced" Required="false" Mask="false">15 0 * * *</Config>
   <Config Name="Backfill Tage" Target="SYNC_LOOKBACK_DAYS" Default="2" Mode="" Description="Rueckwirkender Zeitraum beim allerersten Sync-Lauf" Type="Variable" Display="advanced" Required="false" Mask="false">2</Config>
-  <Config Name="Standort-Mapping (JSON)" Target="SITE_MAPPING_SEED" Default="[]" Mode="" Description='Optionales Seed-Mapping, z.B. [{"prefix":"10","site":"Zentrale"}]' Type="Variable" Display="advanced" Required="false" Mask="false">[]</Config>
+  <Config Name="Standort-Mapping (JSON)" Target="SITE_MAPPING_SEED" Default="[]" Mode="" Description='Optionales Seed-Mapping, z.B. [{"range_start":800,"range_end":899,"site":"Standort Nord"}]' Type="Variable" Display="advanced" Required="false" Mask="false">[]</Config>
 </Container>

@@ -122,22 +122,26 @@ Dashboard ist unabhängig davon voll benutzbar.
 ## Standort-Zuordnung (8 Standorte)
 
 COMtrexx kennt selbst keinen "Standort" pro Anruf — die Zuordnung erfolgt
-über ein Präfix-Mapping auf die interne Nebenstellennummer. Verwaltbar direkt
-im Dashboard unter dem Tab **„Einstellungen"** (Präfix hinzufügen/entfernen),
-alternativ über `GET/POST/DELETE /api/sites` oder als Erstbefüllung über die
-Env-Var `SITE_MAPPING_SEED`:
+über einen **numerischen Nebenstellen-Bereich** (von/bis, jeweils
+inklusive), z. B. 800-899 für Gießen oder 1000-1099 für Viernheim (mit Platz
+für einen künftigen Standort auf 1100-1199). Verwaltbar direkt im Dashboard
+unter dem Tab **„Einstellungen"**, alternativ über `GET/POST/DELETE
+/api/sites` oder als Erstbefüllung über die Env-Var `SITE_MAPPING_SEED`:
 
 ```json
 [
-  {"prefix": "10", "site": "Zentrale"},
-  {"prefix": "20", "site": "Standort Nord"},
-  {"prefix": "30", "site": "Standort Sued"}
+  {"range_start": 300, "range_end": 399, "site": "Bad Vilbel"},
+  {"range_start": 800, "range_end": 899, "site": "Gießen"},
+  {"range_start": 1000, "range_end": 1099, "site": "Viernheim"}
 ]
 ```
 
-Der längste passende Präfix gewinnt bei Überschneidungen. Die Zuordnung wird
+Wichtig: das ist ein echter Zahlenbereich, kein Text-Präfix — 800-899 matcht
+alle Nebenstellen 800 bis 899, nicht nur Nummern, die mit „800" *anfangen*
+(das würde 800-809 sowie zufällig 8000-8009 treffen, aber z. B. 850 verfehlen).
+Bei sich überschneidenden Bereichen gewinnt der schmalere. Die Zuordnung wird
 nur beim **Import** eines Anrufs berechnet — bereits importierte Anrufe
-behalten ihren alten Standort, auch wenn ihr die Präfixe später ändert. Nach
+behalten ihren alten Standort, auch wenn ihr die Bereiche später ändert. Nach
 Anpassungen daher am besten unter „Einstellungen" auf **„Vollständigen Import
 starten"** klicken, damit alle Anrufe neu zugeordnet werden.
 
@@ -157,6 +161,13 @@ Anrufe nach dem tatsächlichen Gesprächspartner (nicht nach dem
 Rechnungs-/Trunk-Namen) und zeigt Anzahl, Anteil %, Gesamtzeit und Ø Dauer —
 das bildet die frühere manuelle PDF-Auswertung (z. B. für einen einzelnen
 Standort über einen Monat) live und filterbar nach.
+
+Damit hier nur echte, in COMtrexx angelegte Personen auftauchen (und keine
+Rufgruppen wie „GIE - alle" oder rohe externe Rufnummern, die bei extern
+weitergeleiteten Anrufen sonst als "Teilnehmer" durchrutschen), ruft jeder
+Sync zusätzlich `GET /users` ab und gleicht die Nebenstellen-Nummer jedes
+Anrufs dagegen ab. Die normale Anrufliste zeigt weiterhin **alle** Anrufe
+inkl. Gruppen — nur die Teilnehmer-Karte filtert.
 
 ## Datenverwaltung (Tab „Einstellungen")
 

@@ -21,7 +21,7 @@ services:
       SYNC_LOOKBACK_DAYS: "2"
 
       # Optional: seed the extension→Standort mapping on first start, e.g.
-      # '[{"prefix":"10","site":"Zentrale"},{"prefix":"20","site":"Standort Nord"}]'
+      # '[{"range_start":800,"range_end":899,"site":"Standort Nord"}]'
       SITE_MAPPING_SEED: "[]"
     volumes:
       - ncall_data:/data

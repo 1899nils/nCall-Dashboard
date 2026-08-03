@@ -30,12 +30,29 @@ _PEOPLE = [
 ]
 
 
-def site_mapping_seed() -> list[dict[str, str]]:
-    return [{"prefix": prefix, "site": site} for prefix, site in _SITES]
+def site_mapping_seed() -> list[dict]:
+    # Extensions are generated below as f"{prefix}{1..9}", e.g. prefix "10"
+    # -> 101-109, so mirror that as an explicit numeric range.
+    return [
+        {"range_start": int(prefix) * 10, "range_end": int(prefix) * 10 + 9, "site": site}
+        for prefix, site in _SITES
+    ]
 
 
 def _person_for(extension: str) -> str:
     return _PEOPLE[int(extension) % len(_PEOPLE)]
+
+
+def generate_mock_users() -> list[dict]:
+    """Mirrors the real /users response shape: every extension used by
+    generate_mock_records() below, so the Teilnehmer-Report's known-users
+    filter has something to match against in demo mode too."""
+    users = []
+    for prefix, _ in _SITES:
+        for digit in range(1, 10):
+            extension = prefix + str(digit)
+            users.append({"phoneNumber": extension, "userName": _person_for(extension)})
+    return users
 
 
 def generate_mock_records(since: datetime, until: datetime) -> list[dict]:

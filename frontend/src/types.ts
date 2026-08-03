@@ -34,7 +34,8 @@ export interface StatsSummary {
 
 export interface SiteMapping {
   id: number;
-  prefix: string;
+  range_start: number;
+  range_end: number;
   site: string;
 }
 

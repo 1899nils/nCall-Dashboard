@@ -6,7 +6,7 @@ from sqlmodel import Session, select
 
 from app.api.filters import apply_call_filters, filter_by_service_segments
 from app.database import get_session
-from app.models import Call
+from app.models import Call, KnownUser
 
 router = APIRouter(prefix="/api/stats", tags=["stats"])
 
@@ -97,11 +97,21 @@ def participants(
     """Per-Teilnehmer (Tn-Name real) Auswertung of the currently filtered
     calls: Anzahl, Anteil %, Gesamtzeit, Ø Dauer. Mirrors the manual
     per-agent PDF report, but live and filterable (Standort, Richtung,
-    Anruftyp, Servicezeit, Zeitraum)."""
+    Anruftyp, Servicezeit, Zeitraum).
+
+    Only counts calls whose internal_number belongs to a real, configured
+    COMtrexx user (refreshed from GET /users on every sync) — otherwise
+    call groups (e.g. "GIE - alle") and, for externally forwarded calls,
+    raw external numbers would show up as "participants" too.
+    """
     calls = _fetch_filtered_calls(
         session, date_from, date_to, site, direction, extension, number, min_duration,
         call_type, service_segment,
     )
+
+    known_numbers = set(session.exec(select(KnownUser.phone_number)).all())
+    if known_numbers:
+        calls = [c for c in calls if c.internal_number in known_numbers]
 
     by_name: dict[str, list[Call]] = {}
     for c in calls:

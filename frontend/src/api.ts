@@ -51,11 +51,11 @@ export async function triggerSync(full = false): Promise<SyncRun> {
   return res.json();
 }
 
-export async function createSite(prefix: string, site: string): Promise<SiteMapping> {
+export async function createSite(rangeStart: number, rangeEnd: number, site: string): Promise<SiteMapping> {
   const res = await fetch(`/api/sites`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ prefix, site }),
+    body: JSON.stringify({ range_start: rangeStart, range_end: rangeEnd, site }),
   });
   if (!res.ok) throw new Error("Standort konnte nicht gespeichert werden");
   return res.json();

@@ -44,7 +44,9 @@ def _seed_site_mappings() -> None:
             seed = site_mapping_seed()
 
         for entry in seed:
-            session.add(SiteMapping(prefix=entry["prefix"], site=entry["site"]))
+            session.add(
+                SiteMapping(range_start=entry["range_start"], range_end=entry["range_end"], site=entry["site"])
+            )
         if seed:
             session.commit()
 

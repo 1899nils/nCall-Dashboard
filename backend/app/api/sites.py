@@ -9,26 +9,33 @@ router = APIRouter(prefix="/api/sites", tags=["sites"])
 
 
 class SiteMappingIn(BaseModel):
-    prefix: str
+    range_start: int
+    range_end: int
     site: str
 
 
 @router.get("")
 def list_sites(session: Session = Depends(get_session)):
-    return session.exec(select(SiteMapping).order_by(SiteMapping.prefix)).all()
+    return session.exec(select(SiteMapping).order_by(SiteMapping.range_start)).all()
 
 
 @router.post("")
 def upsert_site(payload: SiteMappingIn, session: Session = Depends(get_session)):
-    existing = session.exec(select(SiteMapping).where(SiteMapping.prefix == payload.prefix)).first()
+    if payload.range_end < payload.range_start:
+        raise HTTPException(status_code=400, detail="range_end must be >= range_start")
+
+    existing = session.exec(
+        select(SiteMapping).where(SiteMapping.range_start == payload.range_start)
+    ).first()
     if existing:
+        existing.range_end = payload.range_end
         existing.site = payload.site
         session.add(existing)
         session.commit()
         session.refresh(existing)
         return existing
 
-    mapping = SiteMapping(prefix=payload.prefix, site=payload.site)
+    mapping = SiteMapping(range_start=payload.range_start, range_end=payload.range_end, site=payload.site)
     session.add(mapping)
     session.commit()
     session.refresh(mapping)

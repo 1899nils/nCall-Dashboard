@@ -2,13 +2,13 @@ import logging
 from datetime import datetime, timedelta
 
 from dateutil import parser as dateutil_parser
-from sqlmodel import Session, select
+from sqlmodel import Session, delete, select
 
 from app.comtrexx import mock as comtrexx_mock
 from app.comtrexx.client import ComtrexxClient, ComtrexxError, map_record
 from app.config import Settings, get_settings
 from app.database import session_scope
-from app.models import Call, SiteMapping, Setting, SyncRun
+from app.models import Call, KnownUser, SiteMapping, Setting, SyncRun
 
 logger = logging.getLogger("ncall.sync")
 
@@ -35,13 +35,31 @@ def _set_watermark(session: Session, value: datetime) -> None:
 
 
 def _resolve_site(session: Session, internal_number: str) -> str | None:
+    try:
+        number = int(internal_number)
+    except (TypeError, ValueError):
+        return None
+
     mappings = session.exec(select(SiteMapping)).all()
     best: SiteMapping | None = None
     for m in mappings:
-        if internal_number.startswith(m.prefix):
-            if best is None or len(m.prefix) > len(best.prefix):
+        if m.range_start <= number <= m.range_end:
+            # Narrowest matching range wins if ranges happen to overlap.
+            if best is None or (m.range_end - m.range_start) < (best.range_end - best.range_start):
                 best = m
     return best.site if best else None
+
+
+def _refresh_known_users(session: Session, users_raw: list[dict]) -> None:
+    """Replace the KnownUser table with the current /users list, so the
+    Teilnehmer report can tell real people apart from call groups and
+    external numbers that end up on a Call's internal_number/name."""
+    session.exec(delete(KnownUser))
+    for u in users_raw:
+        phone = str(u.get("phoneNumber") or "").strip()
+        if not phone:
+            continue
+        session.add(KnownUser(phone_number=phone, name=u.get("userName") or phone))
 
 
 def run_sync(full: bool = False) -> SyncRun:
@@ -62,12 +80,19 @@ def run_sync(full: bool = False) -> SyncRun:
         try:
             if settings.comtrexx_mock:
                 raw_records = comtrexx_mock.generate_mock_records(since, until)
+                users_raw = comtrexx_mock.generate_mock_users()
             else:
                 client = ComtrexxClient(settings)
                 try:
                     raw_records = client.fetch_call_journal(since)
+                    users_raw = client.fetch_users()
                 finally:
                     client.close()
+
+            try:
+                _refresh_known_users(session, users_raw)
+            except Exception:  # noqa: BLE001 - don't let this block call import
+                logger.exception("Refreshing known users failed, keeping previous list")
 
             for raw in raw_records:
                 mapped = map_record(raw)

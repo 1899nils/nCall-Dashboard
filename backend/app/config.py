@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     comtrexx_verify_ssl: bool = True
     comtrexx_login_endpoint: str = "/login"
     comtrexx_call_endpoint: str = "/calldata"
+    comtrexx_users_endpoint: str = "/users"
     comtrexx_page_size: int = 500
     comtrexx_request_timeout: float = 30.0
 
@@ -32,8 +33,8 @@ class Settings(BaseSettings):
     database_path: str = "/data/ncall.db"
 
     # Optional seed for extension→site mapping, JSON list of
-    # {"prefix": "1", "site": "Standort Nord"} objects. Prefix matches the
-    # start of the internal extension number.
+    # {"range_start": 800, "range_end": 899, "site": "Standort Nord"}
+    # objects (inclusive numeric extension range).
     site_mapping_seed: str = "[]"
 
 

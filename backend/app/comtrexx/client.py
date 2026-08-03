@@ -67,12 +67,10 @@ class ComtrexxClient:
         # Session cookie (ctx_sessionid) is now stored in self._client's cookie jar.
         self._logged_in = True
 
-    def fetch_call_journal(self, since: datetime) -> list[dict[str, Any]]:
-        """Fetch raw /calldata records with startDate >= `since`.
-
-        Pages through the full result set (no server-side date filter is
-        available) and stops once a full page comes back short.
-        """
+    def _paginate(self, endpoint: str) -> list[dict[str, Any]]:
+        """GET `endpoint` with limit/offset paging until a short page comes
+        back. Shared by /calldata and /users, which both use the same
+        {"_links": ..., "data": [...]} envelope."""
         if not self._logged_in:
             self._login()
 
@@ -82,20 +80,14 @@ class ComtrexxClient:
 
         while True:
             try:
-                response = self._client.get(
-                    self.settings.comtrexx_call_endpoint,
-                    params={"limit": limit, "offset": offset},
-                )
+                response = self._client.get(endpoint, params={"limit": limit, "offset": offset})
                 if response.status_code == 401:
                     # Session expired: re-login once and retry this page.
                     self._login()
-                    response = self._client.get(
-                        self.settings.comtrexx_call_endpoint,
-                        params={"limit": limit, "offset": offset},
-                    )
+                    response = self._client.get(endpoint, params={"limit": limit, "offset": offset})
                 response.raise_for_status()
             except httpx.HTTPError as exc:
-                raise ComtrexxError(f"COMtrexx call data request failed: {exc}") from exc
+                raise ComtrexxError(f"COMtrexx request to {endpoint} failed: {exc}") from exc
 
             payload = response.json()
             page = payload.get("data", []) if isinstance(payload, dict) else payload
@@ -104,6 +96,16 @@ class ComtrexxClient:
             if len(page) < limit:
                 break
             offset += limit
+
+        return records
+
+    def fetch_call_journal(self, since: datetime) -> list[dict[str, Any]]:
+        """Fetch raw /calldata records with startDate >= `since`.
+
+        Pages through the full result set (no server-side date filter is
+        available) and filters by startDate on our side.
+        """
+        records = self._paginate(self.settings.comtrexx_call_endpoint)
 
         filtered = []
         for raw in records:
@@ -114,6 +116,12 @@ class ComtrexxClient:
             if started.replace(tzinfo=None) >= since.replace(tzinfo=None):
                 filtered.append(raw)
         return filtered
+
+    def fetch_users(self) -> list[dict[str, Any]]:
+        """Fetch all real telephony users (GET /users): phoneNumber +
+        userName. Distinct from call groups (/groups) — used to filter the
+        Teilnehmer report down to actual configured people."""
+        return self._paginate(self.settings.comtrexx_users_endpoint)
 
 
 def _fallback_external_id(raw: dict[str, Any]) -> str:
