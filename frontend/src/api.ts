@@ -1,4 +1,4 @@
-import type { CallsResponse, Filters, SiteMapping, StatsSummary, SyncRun } from "./types";
+import type { CallsResponse, Filters, ParticipantsResponse, SiteMapping, StatsSummary, SyncRun } from "./types";
 
 function buildQuery(filters: Filters, extra: Record<string, string | number> = {}): string {
   const params = new URLSearchParams();
@@ -6,6 +6,8 @@ function buildQuery(filters: Filters, extra: Record<string, string | number> = {
   if (filters.date_to) params.set("date_to", filters.date_to);
   filters.site.forEach((s) => params.append("site", s));
   filters.direction.forEach((d) => params.append("direction", d));
+  filters.call_type.forEach((c) => params.append("call_type", c));
+  filters.service_segment.forEach((s) => params.append("service_segment", s));
   if (filters.extension) params.set("extension", filters.extension);
   if (filters.number) params.set("number", filters.number);
   if (filters.min_duration) params.set("min_duration", filters.min_duration);
@@ -22,6 +24,12 @@ export async function fetchCalls(filters: Filters, page: number, pageSize: numbe
 export async function fetchSummary(filters: Filters): Promise<StatsSummary> {
   const res = await fetch(`/api/stats/summary?${buildQuery(filters)}`);
   if (!res.ok) throw new Error("Fehler beim Laden der Statistik");
+  return res.json();
+}
+
+export async function fetchParticipants(filters: Filters): Promise<ParticipantsResponse> {
+  const res = await fetch(`/api/stats/participants?${buildQuery(filters)}`);
+  if (!res.ok) throw new Error("Fehler beim Laden der Teilnehmer-Auswertung");
   return res.json();
 }
 

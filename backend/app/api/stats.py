@@ -4,11 +4,31 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Query
 from sqlmodel import Session, select
 
-from app.api.filters import apply_call_filters
+from app.api.filters import apply_call_filters, filter_by_service_segments
 from app.database import get_session
 from app.models import Call
 
 router = APIRouter(prefix="/api/stats", tags=["stats"])
+
+
+def _fetch_filtered_calls(
+    session: Session,
+    date_from: Optional[date],
+    date_to: Optional[date],
+    site: Optional[list[str]],
+    direction: Optional[list[str]],
+    extension: Optional[str],
+    number: Optional[str],
+    min_duration: Optional[int],
+    call_type: Optional[list[str]],
+    service_segment: Optional[list[str]],
+) -> list[Call]:
+    base = select(Call)
+    base = apply_call_filters(
+        base, date_from, date_to, site, direction, extension, number, min_duration, call_type
+    )
+    calls = session.exec(base).all()
+    return filter_by_service_segments(calls, service_segment)
 
 
 @router.get("/summary")
@@ -17,14 +37,17 @@ def summary(
     date_to: Optional[date] = None,
     site: Optional[list[str]] = Query(default=None),
     direction: Optional[list[str]] = Query(default=None),
+    call_type: Optional[list[str]] = Query(default=None),
+    service_segment: Optional[list[str]] = Query(default=None),
     extension: Optional[str] = None,
     number: Optional[str] = None,
     min_duration: Optional[int] = None,
     session: Session = Depends(get_session),
 ):
-    base = select(Call)
-    base = apply_call_filters(base, date_from, date_to, site, direction, extension, number, min_duration)
-    calls = session.exec(base).all()
+    calls = _fetch_filtered_calls(
+        session, date_from, date_to, site, direction, extension, number, min_duration,
+        call_type, service_segment,
+    )
 
     total_calls = len(calls)
     missed_calls = sum(1 for c in calls if c.direction == "missed")
@@ -56,3 +79,49 @@ def summary(
         "calls_per_site": calls_per_site,
         "top_numbers": top_numbers,
     }
+
+
+@router.get("/participants")
+def participants(
+    date_from: Optional[date] = None,
+    date_to: Optional[date] = None,
+    site: Optional[list[str]] = Query(default=None),
+    direction: Optional[list[str]] = Query(default=None),
+    call_type: Optional[list[str]] = Query(default=None),
+    service_segment: Optional[list[str]] = Query(default=None),
+    extension: Optional[str] = None,
+    number: Optional[str] = None,
+    min_duration: Optional[int] = None,
+    session: Session = Depends(get_session),
+):
+    """Per-Teilnehmer (Tn-Name real) Auswertung of the currently filtered
+    calls: Anzahl, Anteil %, Gesamtzeit, Ø Dauer. Mirrors the manual
+    per-agent PDF report, but live and filterable (Standort, Richtung,
+    Anruftyp, Servicezeit, Zeitraum)."""
+    calls = _fetch_filtered_calls(
+        session, date_from, date_to, site, direction, extension, number, min_duration,
+        call_type, service_segment,
+    )
+
+    by_name: dict[str, list[Call]] = {}
+    for c in calls:
+        name = c.internal_name or c.internal_number or "Unbekannt"
+        by_name.setdefault(name, []).append(c)
+
+    total = len(calls)
+    rows = []
+    for name, group in by_name.items():
+        count = len(group)
+        total_duration = sum(c.duration_seconds for c in group)
+        rows.append(
+            {
+                "name": name,
+                "count": count,
+                "share_percent": round(count / total * 100, 1) if total else 0,
+                "total_duration_seconds": total_duration,
+                "avg_duration_seconds": round(total_duration / count, 1) if count else 0,
+            }
+        )
+    rows.sort(key=lambda r: -r["count"])
+
+    return {"total": total, "participants": rows}

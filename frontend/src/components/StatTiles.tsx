@@ -1,10 +1,5 @@
+import { formatDuration } from "../format";
 import type { StatsSummary } from "../types";
-
-function formatDuration(seconds: number): string {
-  const m = Math.floor(seconds / 60);
-  const s = Math.round(seconds % 60);
-  return `${m}:${String(s).padStart(2, "0")}`;
-}
 
 export default function StatTiles({ summary }: { summary: StatsSummary }) {
   const answeredShare =

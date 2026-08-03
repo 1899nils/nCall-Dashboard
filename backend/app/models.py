@@ -18,6 +18,10 @@ class Call(SQLModel, table=True):
     external_number: Optional[str] = None
     external_name: Optional[str] = None
 
+    # Raw COMtrexx callType (Normal | CfIntern | CfExtern | ...), see
+    # app/comtrexx/client.py for the mapping to "external"/"internal_forwarded".
+    call_type: Optional[str] = Field(default=None, index=True)
+
     # Resolved from SiteMapping at sync time based on internal_number.
     site: Optional[str] = Field(default=None, index=True)
 

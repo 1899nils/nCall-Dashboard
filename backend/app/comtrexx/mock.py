@@ -24,9 +24,18 @@ _EXTERNAL_NUMBERS = [
     "+49 171 3334455",
 ]
 
+_PEOPLE = [
+    "Anna Meier", "Ben Krause", "Clara Voss", "David Schulz", "Eva Wagner",
+    "Felix Bauer", "Greta Hoffmann", "Hannes Lang", "Ida Peters", "Jonas Weiss",
+]
+
 
 def site_mapping_seed() -> list[dict[str, str]]:
     return [{"prefix": prefix, "site": site} for prefix, site in _SITES]
+
+
+def _person_for(extension: str) -> str:
+    return _PEOPLE[int(extension) % len(_PEOPLE)]
 
 
 def generate_mock_records(since: datetime, until: datetime) -> list[dict]:
@@ -50,6 +59,17 @@ def generate_mock_records(since: datetime, until: datetime) -> list[dict]:
                 outcome = random.choices(["in", "out", "missed"], weights=[45, 45, 10])[0]
                 started = current + timedelta(minutes=random.randint(0, 59))
                 duration = 0 if outcome == "missed" else random.randint(15, 900)
+
+                connected_extension = extension
+                call_type = "Normal"
+                if outcome == "in":
+                    call_type = random.choices(
+                        ["Normal", "CfIntern", "CfExtern"], weights=[80, 15, 5]
+                    )[0]
+                    if call_type == "CfIntern":
+                        # Forwarded to a colleague at the same site.
+                        connected_extension = prefix + str(random.randint(1, 9))
+
                 records.append(
                     {
                         "CallDataId": str(uuid.uuid4()),
@@ -57,8 +77,11 @@ def generate_mock_records(since: datetime, until: datetime) -> list[dict]:
                         "length": duration,
                         "direction": "Outgoing" if outcome == "out" else "Incoming",
                         "success": outcome != "missed",
+                        "callType": call_type,
                         "userNumber": extension,
-                        "userName": f"NST {extension}",
+                        "userName": "Zentrale" if outcome != "out" else _person_for(extension),
+                        "connectedUserNumber": connected_extension,
+                        "connectedUserName": _person_for(connected_extension),
                         "externalPhoneNumber": random.choice(_EXTERNAL_NUMBERS),
                         "externalName": None,
                     }

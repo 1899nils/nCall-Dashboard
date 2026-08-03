@@ -1,3 +1,4 @@
+import { formatDuration } from "../format";
 import type { Call, CallsResponse } from "../types";
 
 const DIRECTION_LABEL: Record<string, string> = {
@@ -6,11 +7,11 @@ const DIRECTION_LABEL: Record<string, string> = {
   missed: "Verpasst",
 };
 
-function formatDuration(seconds: number): string {
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${m}:${String(s).padStart(2, "0")}`;
-}
+const CALL_TYPE_LABEL: Record<string, string> = {
+  Normal: "Extern",
+  CfIntern: "Intern weitergeleitet",
+  CfExtern: "Extern weitergeleitet",
+};
 
 function formatDateTime(iso: string): string {
   const d = new Date(iso);
@@ -38,6 +39,7 @@ export default function CallsTable({ data, page, pageSize, onPageChange }: Props
             <th>Standort</th>
             <th>Nebenstelle</th>
             <th>Richtung</th>
+            <th>Anruftyp</th>
             <th>Rufnummer</th>
             <th>Dauer</th>
           </tr>
@@ -56,6 +58,7 @@ export default function CallsTable({ data, page, pageSize, onPageChange }: Props
                   {DIRECTION_LABEL[call.direction] ?? call.direction}
                 </span>
               </td>
+              <td>{call.call_type ? CALL_TYPE_LABEL[call.call_type] ?? call.call_type : "–"}</td>
               <td>
                 {call.external_number ?? "–"}
                 {call.external_name ? ` (${call.external_name})` : ""}
@@ -65,7 +68,7 @@ export default function CallsTable({ data, page, pageSize, onPageChange }: Props
           ))}
           {data.items.length === 0 && (
             <tr>
-              <td colSpan={6} style={{ color: "var(--text-muted)", textAlign: "center", padding: "24px" }}>
+              <td colSpan={7} style={{ color: "var(--text-muted)", textAlign: "center", padding: "24px" }}>
                 Keine Anrufe für die gewählten Filter.
               </td>
             </tr>

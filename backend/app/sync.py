@@ -94,6 +94,7 @@ def run_sync(full: bool = False) -> SyncRun:
                     internal_name=mapped.get("internal_name"),
                     external_number=mapped.get("external_number"),
                     external_name=mapped.get("external_name"),
+                    call_type=mapped.get("call_type"),
                     site=site,
                 )
                 session.add(call)

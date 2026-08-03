@@ -1,14 +1,15 @@
 import { useEffect, useState } from "react";
-import { fetchCalls, fetchSites, fetchSummary, fetchSyncStatus } from "./api";
+import { fetchCalls, fetchParticipants, fetchSites, fetchSummary, fetchSyncStatus } from "./api";
 import CallsPerDayChart from "./components/CallsPerDayChart";
 import CallsPerSiteChart from "./components/CallsPerSiteChart";
 import CallsTable from "./components/CallsTable";
 import FilterBar from "./components/FilterBar";
+import ParticipantsTable from "./components/ParticipantsTable";
 import SettingsPanel from "./components/SettingsPanel";
 import StatTiles from "./components/StatTiles";
 import SyncStatus from "./components/SyncStatus";
 import { emptyFilters } from "./types";
-import type { CallsResponse, Filters, SiteMapping, StatsSummary, SyncRun } from "./types";
+import type { CallsResponse, Filters, ParticipantsResponse, SiteMapping, StatsSummary, SyncRun } from "./types";
 
 const PAGE_SIZE = 25;
 
@@ -19,6 +20,7 @@ export default function App() {
 
   const [summary, setSummary] = useState<StatsSummary | null>(null);
   const [calls, setCalls] = useState<CallsResponse | null>(null);
+  const [participants, setParticipants] = useState<ParticipantsResponse | null>(null);
   const [sites, setSites] = useState<SiteMapping[]>([]);
   const [lastRun, setLastRun] = useState<SyncRun | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -41,11 +43,12 @@ export default function App() {
   useEffect(() => {
     let cancelled = false;
     setError(null);
-    Promise.all([fetchSummary(filters), fetchCalls(filters, page, PAGE_SIZE)])
-      .then(([s, c]) => {
+    Promise.all([fetchSummary(filters), fetchCalls(filters, page, PAGE_SIZE), fetchParticipants(filters)])
+      .then(([s, c, p]) => {
         if (cancelled) return;
         setSummary(s);
         setCalls(c);
+        setParticipants(p);
       })
       .catch((e) => !cancelled && setError(e.message));
     return () => {
@@ -57,6 +60,7 @@ export default function App() {
     fetchSyncStatus().then((s) => setLastRun(s.last_run));
     fetchSummary(filters).then(setSummary);
     fetchCalls(filters, page, PAGE_SIZE).then(setCalls);
+    fetchParticipants(filters).then(setParticipants);
   }
 
   const allSiteNames = Array.from(new Set(sites.map((s) => s.site))).sort();
@@ -98,6 +102,8 @@ export default function App() {
               </div>
             </>
           )}
+
+          <ParticipantsTable data={participants} />
 
           <CallsTable data={calls} page={page} pageSize={PAGE_SIZE} onPageChange={setPage} />
         </>

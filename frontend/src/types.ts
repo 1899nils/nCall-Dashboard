@@ -1,4 +1,6 @@
 export type Direction = "in" | "out" | "missed";
+export type CallType = "external" | "internal_forwarded" | "external_forwarded";
+export type ServiceSegment = "business" | "off_hours" | "weekend";
 
 export interface Call {
   id: number;
@@ -10,6 +12,7 @@ export interface Call {
   internal_name?: string | null;
   external_number?: string | null;
   external_name?: string | null;
+  call_type?: string | null;
   site?: string | null;
 }
 
@@ -35,6 +38,19 @@ export interface SiteMapping {
   site: string;
 }
 
+export interface ParticipantRow {
+  name: string;
+  count: number;
+  share_percent: number;
+  total_duration_seconds: number;
+  avg_duration_seconds: number;
+}
+
+export interface ParticipantsResponse {
+  total: number;
+  participants: ParticipantRow[];
+}
+
 export interface SyncRun {
   id: number;
   started_at: string;
@@ -49,6 +65,8 @@ export interface Filters {
   date_to: string;
   site: string[];
   direction: Direction[];
+  call_type: CallType[];
+  service_segment: ServiceSegment[];
   extension: string;
   number: string;
   min_duration: string;
@@ -59,6 +77,8 @@ export const emptyFilters: Filters = {
   date_to: "",
   site: [],
   direction: [],
+  call_type: [],
+  service_segment: [],
   extension: "",
   number: "",
   min_duration: "",

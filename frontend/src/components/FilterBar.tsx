@@ -1,9 +1,21 @@
-import type { Direction, Filters, SiteMapping } from "../types";
+import type { CallType, Direction, Filters, ServiceSegment, SiteMapping } from "../types";
 
 const DIRECTIONS: { value: Direction; label: string }[] = [
   { value: "in", label: "Eingehend" },
   { value: "out", label: "Ausgehend" },
   { value: "missed", label: "Verpasst" },
+];
+
+const CALL_TYPES: { value: CallType; label: string }[] = [
+  { value: "external", label: "Extern" },
+  { value: "internal_forwarded", label: "Intern weitergeleitet" },
+  { value: "external_forwarded", label: "Extern weitergeleitet" },
+];
+
+const SERVICE_SEGMENTS: { value: ServiceSegment; label: string }[] = [
+  { value: "business", label: "Mo–Fr 08–17" },
+  { value: "off_hours", label: "Mo–Fr außerhalb" },
+  { value: "weekend", label: "Wochenende" },
 ];
 
 interface Props {
@@ -65,6 +77,38 @@ export default function FilterBar({ filters, onChange, sites }: Props) {
               onClick={() => onChange({ ...filters, direction: toggle(filters.direction, d.value) })}
             >
               {d.label}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <div className="filter-field">
+        <label>Anruftyp</label>
+        <div className="chip-group">
+          {CALL_TYPES.map((c) => (
+            <span
+              key={c.value}
+              className={`chip ${filters.call_type.includes(c.value) ? "active" : ""}`}
+              onClick={() => onChange({ ...filters, call_type: toggle(filters.call_type, c.value) })}
+            >
+              {c.label}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <div className="filter-field">
+        <label>Servicezeit</label>
+        <div className="chip-group">
+          {SERVICE_SEGMENTS.map((s) => (
+            <span
+              key={s.value}
+              className={`chip ${filters.service_segment.includes(s.value) ? "active" : ""}`}
+              onClick={() =>
+                onChange({ ...filters, service_segment: toggle(filters.service_segment, s.value) })
+              }
+            >
+              {s.label}
             </span>
           ))}
         </div>

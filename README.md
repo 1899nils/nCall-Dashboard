@@ -141,6 +141,23 @@ behalten ihren alten Standort, auch wenn ihr die Präfixe später ändert. Nach
 Anpassungen daher am besten unter „Einstellungen" auf **„Vollständigen Import
 starten"** klicken, damit alle Anrufe neu zugeordnet werden.
 
+## Anruftyp, Servicezeiten & Teilnehmer-Auswertung
+
+Zusätzlich zu Standort/Richtung/Zeitraum gibt es zwei weitere Filter:
+
+- **Anruftyp**: leitet sich aus dem COMtrexx-`callType` ab —
+  „Extern" (`Normal`, direkter externer Anruf), „Intern weitergeleitet"
+  (`CfIntern`, nach Klingeln an eine andere Nebenstelle übergeben),
+  „Extern weitergeleitet" (`CfExtern`).
+- **Servicezeit**: „Mo–Fr 08–17", „Mo–Fr außerhalb", „Wochenende" — berechnet
+  aus Datum/Uhrzeit des Anrufs.
+
+Die Karte **„Teilnehmer-Auswertung"** gruppiert die aktuell gefilterten
+Anrufe nach dem tatsächlichen Gesprächspartner (nicht nach dem
+Rechnungs-/Trunk-Namen) und zeigt Anzahl, Anteil %, Gesamtzeit und Ø Dauer —
+das bildet die frühere manuelle PDF-Auswertung (z. B. für einen einzelnen
+Standort über einen Monat) live und filterbar nach.
+
 ## Datenverwaltung (Tab „Einstellungen")
 
 - **Alle Anrufdaten löschen**: löscht alle importierten Anrufe, die

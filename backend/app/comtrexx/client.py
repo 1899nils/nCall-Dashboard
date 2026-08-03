@@ -17,6 +17,11 @@ Call data (GET /calldata):
   externalPhoneNumber, msn, userNumber, userName, connectedUserNumber,
   connectedUserName, groupNumber, groupName, cost, costFactor,
   direction ("Incoming"/"Outgoing"), callType, success (bool).
+- callType (per the spec's enum): Normal = ordinary/direct call, CfIntern =
+  forwarded to another internal extension, CfExtern = forwarded to an
+  external destination (plus Voicemailbox/Faxbox/Callthrough/... edge
+  cases). map_record() below labels these "external"/"internal_forwarded"/
+  "external_forwarded" in the API filters (see app/api/filters.py).
 """
 
 from datetime import datetime
@@ -124,8 +129,13 @@ def map_record(raw: dict[str, Any]) -> dict[str, Any]:
         "started_at": raw.get("startDate"),
         "duration_seconds": int(raw.get("length") or 0),
         "direction": direction,
-        "internal_number": str(raw.get("userNumber") or raw.get("connectedUserNumber") or ""),
-        "internal_name": raw.get("userName") or raw.get("connectedUserName"),
+        # connectedUser* is who actually ended up on the call (relevant for
+        # forwarded calls); userNumber/userName is often just the trunk/
+        # billing owner (e.g. "Zentrale") and not useful for attributing the
+        # call to a real person, so prefer connectedUser* and fall back.
+        "internal_number": str(raw.get("connectedUserNumber") or raw.get("userNumber") or ""),
+        "internal_name": raw.get("connectedUserName") or raw.get("userName"),
         "external_number": raw.get("externalPhoneNumber"),
         "external_name": raw.get("externalName"),
+        "call_type": raw.get("callType"),
     }
