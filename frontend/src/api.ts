@@ -97,6 +97,18 @@ export async function logout(): Promise<void> {
   await fetch(`/api/auth/logout`, { method: "POST" });
 }
 
+export async function changeOwnPassword(currentPassword: string, newPassword: string): Promise<void> {
+  const res = await apiFetch(`/api/auth/me/password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new Error(body?.detail ?? "Passwort konnte nicht geändert werden");
+  }
+}
+
 export async function fetchMe(): Promise<AppUser | null> {
   const res = await fetch(`/api/auth/me`);
   if (!res.ok) return null;

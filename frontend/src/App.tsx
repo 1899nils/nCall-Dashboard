@@ -3,6 +3,7 @@ import { fetchCalls, fetchMe, fetchParticipants, fetchSites, fetchSummary, fetch
 import CallsPerDayChart from "./components/CallsPerDayChart";
 import CallsPerSiteChart from "./components/CallsPerSiteChart";
 import CallsTable from "./components/CallsTable";
+import ChangePasswordForm from "./components/ChangePasswordForm";
 import FilterBar from "./components/FilterBar";
 import LoginForm from "./components/LoginForm";
 import ParticipantsTable from "./components/ParticipantsTable";
@@ -18,6 +19,7 @@ const PAGE_SIZE = 25;
 export default function App() {
   // undefined = still checking session, null = not logged in
   const [me, setMe] = useState<AppUser | null | undefined>(undefined);
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [tab, setTab] = useState<"dashboard" | "settings">("dashboard");
   const [selectedSite, setSelectedSite] = useState<string | null>(null);
   const [filters, setFilters] = useState<Filters>(emptyFilters);
@@ -87,6 +89,7 @@ export default function App() {
   async function handleLogout() {
     await logout();
     setMe(null);
+    setShowPasswordForm(false);
   }
 
   if (me === undefined) return null;
@@ -105,11 +108,20 @@ export default function App() {
         <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)", textAlign: "right" }}>
           {me.username}
           <br />
+          <span
+            style={{ cursor: "pointer", textDecoration: "underline" }}
+            onClick={() => setShowPasswordForm((v) => !v)}
+          >
+            Passwort ändern
+          </span>
+          {" · "}
           <span style={{ cursor: "pointer", textDecoration: "underline" }} onClick={handleLogout}>
             Abmelden
           </span>
         </div>
       </div>
+
+      {showPasswordForm && <ChangePasswordForm onClose={() => setShowPasswordForm(false)} />}
 
       <div className="tabs">
         <button className={activeTab === "dashboard" ? "active" : ""} onClick={() => setTab("dashboard")}>

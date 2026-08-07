@@ -26,6 +26,11 @@ class CreateUserIn(BaseModel):
     is_admin: bool = False
 
 
+class ChangePasswordIn(BaseModel):
+    current_password: str
+    new_password: str
+
+
 @router.post("/login")
 def login(payload: LoginIn, request: Request, session: Session = Depends(get_session)):
     user = session.exec(select(AppUser).where(AppUser.username == payload.username)).first()
@@ -44,6 +49,23 @@ def logout(request: Request):
 @router.get("/me")
 def me(user: AppUser = Depends(get_current_user)):
     return UserOut(id=user.id, username=user.username, is_admin=user.is_admin)
+
+
+@router.post("/me/password")
+def change_own_password(
+    payload: ChangePasswordIn,
+    user: AppUser = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    if not verify_password(payload.current_password, user.password_hash):
+        raise HTTPException(status_code=400, detail="Aktuelles Passwort ist falsch")
+    if len(payload.new_password) < 8:
+        raise HTTPException(status_code=400, detail="Neues Passwort muss mindestens 8 Zeichen haben")
+    db_user = session.get(AppUser, user.id)
+    db_user.password_hash = hash_password(payload.new_password)
+    session.add(db_user)
+    session.commit()
+    return {"ok": True}
 
 
 @router.get("/users")
