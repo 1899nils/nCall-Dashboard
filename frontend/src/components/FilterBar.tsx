@@ -21,6 +21,26 @@ const SERVICE_SEGMENTS: { value: ServiceSegment; label: string }[] = [
   { value: "weekend", label: "Wochenende" },
 ];
 
+function toDateStr(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function presetRange(daysBack: number): { date_from: string; date_to: string } {
+  const to = new Date();
+  const from = new Date();
+  from.setDate(from.getDate() - (daysBack - 1));
+  return { date_from: toDateStr(from), date_to: toDateStr(to) };
+}
+
+const DATE_PRESETS: { label: string; days: number }[] = [
+  { label: "Heute", days: 1 },
+  { label: "Letzte 7 Tage", days: 7 },
+  { label: "Letzte 30 Tage", days: 30 },
+];
+
 interface Props {
   filters: Filters;
   onChange: (filters: Filters) => void;
@@ -50,6 +70,25 @@ export default function FilterBar({ filters, onChange }: Props) {
           value={filters.date_to}
           onChange={(e) => onChange({ ...filters, date_to: e.target.value })}
         />
+      </div>
+
+      <div className="filter-field">
+        <label>Schnellauswahl</label>
+        <div className="chip-group">
+          {DATE_PRESETS.map((p) => {
+            const range = presetRange(p.days);
+            const active = filters.date_from === range.date_from && filters.date_to === range.date_to;
+            return (
+              <span
+                key={p.label}
+                className={`chip ${active ? "active" : ""}`}
+                onClick={() => onChange({ ...filters, ...range })}
+              >
+                {p.label}
+              </span>
+            );
+          })}
+        </div>
       </div>
 
       <div className="filter-field">
