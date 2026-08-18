@@ -82,7 +82,9 @@ export default function FilterBar({ filters, onChange }: Props) {
               <span
                 key={p.label}
                 className={`chip ${active ? "active" : ""}`}
-                onClick={() => onChange({ ...filters, ...range })}
+                onClick={() =>
+                  onChange({ ...filters, ...(active ? { date_from: "", date_to: "" } : range) })
+                }
               >
                 {p.label}
               </span>
