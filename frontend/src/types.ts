@@ -1,6 +1,6 @@
 export type Direction = "in" | "out" | "missed";
 export type CallType = "external" | "internal" | "internal_forwarded" | "external_forwarded";
-export type ServiceSegment = "business" | "off_hours" | "weekend";
+export type ServiceSegment = "business" | "off_hours" | "weekend" | "opening_hours" | "closed_hours";
 
 export interface Call {
   id: number;

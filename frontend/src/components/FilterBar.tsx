@@ -14,6 +14,8 @@ const CALL_TYPES: { value: CallType; label: string }[] = [
 ];
 
 const SERVICE_SEGMENTS: { value: ServiceSegment; label: string }[] = [
+  { value: "opening_hours", label: "Öffnungszeiten" },
+  { value: "closed_hours", label: "Außerhalb Öffnungszeiten" },
   { value: "business", label: "Mo–Fr 08–17" },
   { value: "off_hours", label: "Mo–Fr außerhalb" },
   { value: "weekend", label: "Wochenende" },

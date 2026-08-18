@@ -186,8 +186,11 @@ Zusätzlich zu Richtung/Zeitraum gibt es zwei weitere Filter:
   (`Normal` + keine externe Nummer), **„Intern weitergeleitet"**
   (`CfIntern`, nach Klingeln an eine andere Nebenstelle übergeben),
   **„Extern weitergeleitet"** (`CfExtern`).
-- **Servicezeit**: „Mo–Fr 08–17", „Mo–Fr außerhalb", „Wochenende" — berechnet
-  aus Datum/Uhrzeit des Anrufs.
+- **Servicezeit**: berechnet aus Datum/Uhrzeit des Anrufs.
+  „Öffnungszeiten"/„Außerhalb Öffnungszeiten" bilden die echten
+  Geschäftszeiten ab (Mo–Sa 10–18 Uhr, freitags bis 20 Uhr, sonntags
+  geschlossen); „Mo–Fr 08–17"/„Mo–Fr außerhalb"/„Wochenende" sind die
+  generischeren Segmente aus der ursprünglichen PDF-Logik.
 
 Die Kachel **„Rückrufquote"** zeigt, wie viele der (aktuell gefilterten)
 verpassten Anrufe innerhalb von 72 Stunden durch einen ausgehenden Anruf an

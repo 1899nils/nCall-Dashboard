@@ -5,7 +5,15 @@ from sqlalchemy import and_, or_
 
 from app.models import Call
 
-SERVICE_SEGMENTS = ("business", "off_hours", "weekend")
+SERVICE_SEGMENTS = ("business", "off_hours", "weekend", "opening_hours", "closed_hours")
+
+# Real opening hours: Mo-Sa 10-18, Fr 10-20, closed Sunday.
+def _within_opening_hours(weekday: int, hour: int) -> bool:
+    if weekday == 6:  # Sunday
+        return False
+    if weekday == 4:  # Friday
+        return 10 <= hour < 20
+    return 10 <= hour < 18  # Mon-Thu + Saturday
 
 
 def _call_type_clause(key: str):
@@ -71,6 +79,10 @@ def matches_service_segment(call: Call, segment: str) -> bool:
         return weekday <= 4 and 8 <= hour < 17
     if segment == "off_hours":
         return weekday <= 4 and not (8 <= hour < 17)
+    if segment == "opening_hours":
+        return _within_opening_hours(weekday, hour)
+    if segment == "closed_hours":
+        return not _within_opening_hours(weekday, hour)
     return True
 
 
