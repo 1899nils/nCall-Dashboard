@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends
 from sqlmodel import Session, select
 
+from app.auth import require_admin
 from app.database import get_session
-from app.models import SyncRun
+from app.models import AppUser, SyncRun
 from app.sync import run_sync
 
 router = APIRouter(prefix="/api/sync", tags=["sync"])
@@ -18,6 +19,6 @@ def status(session: Session = Depends(get_session)):
 
 
 @router.post("/run")
-def trigger_sync(full: bool = False):
+def trigger_sync(full: bool = False, _admin: AppUser = Depends(require_admin)):
     run = run_sync(full=full)
     return run
