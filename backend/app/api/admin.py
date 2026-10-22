@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends
 from sqlmodel import Session, delete
 
+from app.auth import require_admin
 from app.database import get_session
 from app.models import Call, Setting, SyncRun
 from app.sync import WATERMARK_KEY
 
-router = APIRouter(prefix="/api/admin", tags=["admin"])
+router = APIRouter(prefix="/api/admin", tags=["admin"], dependencies=[Depends(require_admin)])
 
 
 @router.post("/reset")

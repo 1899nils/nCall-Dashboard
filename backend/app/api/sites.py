@@ -2,8 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlmodel import Session, select
 
+from app.auth import require_admin
 from app.database import get_session
-from app.models import SiteMapping
+from app.models import AppUser, SiteMapping
 
 router = APIRouter(prefix="/api/sites", tags=["sites"])
 
@@ -20,7 +21,11 @@ def list_sites(session: Session = Depends(get_session)):
 
 
 @router.post("")
-def upsert_site(payload: SiteMappingIn, session: Session = Depends(get_session)):
+def upsert_site(
+    payload: SiteMappingIn,
+    session: Session = Depends(get_session),
+    _admin: AppUser = Depends(require_admin),
+):
     if payload.range_end < payload.range_start:
         raise HTTPException(status_code=400, detail="range_end must be >= range_start")
 
@@ -43,7 +48,11 @@ def upsert_site(payload: SiteMappingIn, session: Session = Depends(get_session))
 
 
 @router.delete("/{mapping_id}")
-def delete_site(mapping_id: int, session: Session = Depends(get_session)):
+def delete_site(
+    mapping_id: int,
+    session: Session = Depends(get_session),
+    _admin: AppUser = Depends(require_admin),
+):
     mapping = session.get(SiteMapping, mapping_id)
     if not mapping:
         raise HTTPException(status_code=404, detail="Not found")
